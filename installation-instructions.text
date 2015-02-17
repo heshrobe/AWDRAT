@@ -1,0 +1,73 @@
+
+How to install Common-Lisp and My code (for the MAC)
+
+On the Mac, X-windows is not installed by default but is required for my environment.
+
+Go to http://xquartz.macosforge.org/ and download hte installer (current version is XQaurtz-2.7.6 dmg, release 2014-05-17) and then install XQuartz.
+
+My environment also requires OpenMotif.  
+  The easiest way to install this is to first install MacPorts, go to www.macports.org and click on "installing MacPorts".  This will walk you through the steps.
+   (The first step is to install XCode (the Mac's developer toolkit)  The instruction point you to the App Store to get this.
+    Then download and install MacPorts.  (MacPorts is a package manager).)
+  Then build OpenMotif: Type at a terminal window: sudo port install OpenMotif (and provide your password when queried for it).
+
+Next you need to install CommonLisp
+  Go to http://franz.com/support/9.0/download/ and download the 64-bit Apple Max OSX (Intel) 10.6 version which is acl90-macosx-x64.dmg and install it.
+
+   Finally you'll need to put a bunch of files in the Allegro home directory and some in your home directory.  I'll provide those on a flash drive.
+
+   One thing you'll need to know is where the Allegro home directory is.  It's pathname is /Applications/AllegroCL64/Contents/Resources/.  Using the Mac inteface you can bring up a window in this directory by either typing command-G (i.e. Clover-key plus G) and typing the path above or by going to the Applications directory and then control-clicking on AllegroCL64 and clicking on the "show package contents" menu item and then navigating through the Contents and then the Resources directories.
+
+Copy into this directory all the files that are in the Allegro-files directory on the flash drive.
+
+Copy into you home directory all the files on the flash-drive that are in the home-directory diretory.
+
+One final thing, there's a very cool utility for the Mac called Better Touch Tool which allows you to program you track pad even more than the native Mac control panel does.
+Go to http://bettertouchtool.en.softonic.com/mac to download it and then install it (which I think just involves moving the file into the Applications directory).  
+Then open the Users & Groups System Preference item (control panel) , click "Login items" on the right side and add (i.e. click the +) Better Touch Tools, this will then start up Beeter Touch Tool whenever you login, and it should add an icon to the upper right menu bar. If you click on this it has a "preferences" menu item which you should click on.  Select Trackpads and  click on Global (on the left).  Then add Three Finger Click and Three Finger Touch with action Middle Click. If Better Touch Tool didn't show up in the menu bar, then just go into the Applications folder and double click on it to get it started.
+
+   The effect of this is to make your trackpad behave like a 3-button mouse.  Tapping with 2 fingers will be the equivalent of a right mouse button (this is buillt in Mac behavior) and tapping with 3 fingers will be the equivalent of a middle mouse button.
+
+Finally you'll want to install Aquamacs, a version of Emacs that's well integrated with the Mac.  You can download this from aqumacs.org (current version is 3.0a).
+
+
+OK, now take a deep breath.
+
+Start up Aquamacs and type  ctrl-x followed by ctrl-l; if the software deities have been similing on us, then Common Lisp should start up in emacs (i.e. a buffer named *common-lisp* will appear) and Some X-windows will appear, one of which says Lisp Listener.
+
+  Click on the Lisp-Listener and type: 
+:load file ~/Research-Projects/Awdrat/code/defsystem.lisp (this should cause the definition of the AWDRAT system to load).
+   Next type:
+:load system AWDRAT
+You should see a bunch of files loaded.
+
+At this point you've got my AWDRAT system loaded into Common Lisp.
+
+To load my simple example:
+
+:compile file ~/Research-Projects/Awdrat/code/simple-example.lisp :load yes
+or 
+:load file ~/Research-Projects/Awdrat/code/simple-example if you've already compiled it.
+
+At this point, you've gotten my example loaded into your Lisp.
+
+typing
+(simple-example-harness) will run the simple example, while AWDRAT monitors it (but there's not much visible).
+
+Things you can do then:
+
+on the command line
+type 
+:set package :awdrat 
+and 
+:set joshua syntax yes
+
+Then you can issue the command
+:show joshua database [selective] yes [opposite truth value] yes (things inside brackets are promprts from the system).
+
+and then when it types pattern? you can type
+[input ? ? ?] and it will then show you every input statement in the model.
+
+(by the way, in the lisp listener if you type control-shift-a inside a parenthesized form it will show you the arglist of the function and if you type option-a inside a square-bracketted form it will show you the arguments to the predicate of the assertion.
+
+     

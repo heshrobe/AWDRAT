@@ -1,0 +1,26 @@
+Notes on a rederign
+
+None of this has to do with functionality just with simplifying the implementation somewhat.
+
+The main thing is that the current design has split the notion of a component into two parts:
+  It's interface: Inputs outputs pre- and post-conditions allowable events resources used
+                        The data-structure for this is component-object
+  It's implementation: The components that make up the structure of the implementation
+                                   as well as their data and control flow links
+                                   The data structure for this is called nested-ensemble
+
+A variety of object-types include pointers to their parents and/or their ensemble
+
+There is a certain appeal to this but it's a bit confusing and since there are two objects representing the same thing
+  some possible confusions about identity.
+
+Proposal is to just have one type of thing a component-object.  It will have a slot for its components and another slot
+saying whether the insides have been built or not: implementation-instantiated.
+
+Build-outside and build-inside will be essentially as they are now, but will work on the same object. They'll be renamed to 
+build-interface and build-implementation.  When the second runs it will set the slot for implementation-instantiated.
+
+Other big issue.  There are assertions, as well as pointers for all the structural relationships.  It seems like the Joshua object-system was created (I should know) 
+for exactly this purpose.  So the other big change is to use joshua-objects.
+
+

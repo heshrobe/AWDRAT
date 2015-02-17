@@ -1,0 +1,42 @@
+What is in an AWDRAT model.
+
+An AWDRAT model is built from several related forms:
+
+1) Description of a component type:
+   Its Interface:
+     A list of inputs
+     A list of its outputs
+     A list of the resources it uses (e.g. files it reads, the code in memory that represents this component, etc)
+     A list of the possible behavior modes that it might exhibit (e.g. normal and one or more failure modes)
+     A list of events that represent entry into the component (usually just one)
+     A list of events that represent exit from the component (usually just one)
+     A list of events that are allowed to occur during any execution of this component
+     A set of conditional probabilities between the possible modes of the resources and the possible modes of the whole component
+   A structural model:
+     A list of sub-components some of which might be splits or joins
+     data-flows between linking ports of the sub-components (outputs of one to inputs of another)
+     control-flow links between cases of a branch and a component that will be enabled if that branch is taken
+     
+
+2) Behavioral specifications of a component 
+    (A component type may have one normal behavioral specification and many abnormal behavioral specifications, each one representing some failure mode)
+   Inputs and outputs
+   Preconditions on the inputs (logical expressions involving one or more of the inputs)
+   Postconditions (logical expressions involving one or more of the outputs and the inputs)
+   Allowable events during the execution in this mode
+
+3) Model of a resource type
+   Possible modes
+   Prior probabilities of being in each mode
+   Attack types to which it is vulnerable
+
+4) Attack Model
+   A list of types of attacks that are being anticipated and the prior probability of each
+   A list describing how each attack type can effect that mode of a resource
+   A set of logical rules expressing the conditional probabilities between attack types and resource modes
+
+5) Tracers
+   Pieces of code that are invoked when certain events happen
+   The tracers can contribute to the representation of the expected state of the monitored system by 
+     monitoring events at a finer grained level than the structural and behavioral models in 1 & 2.
+
