@@ -71,18 +71,36 @@
 (define-predicate output (port component value) (ltms:ltms-predicate-model))
 (define-predicate data-type-of (object type) (ltms:ltms-predicate-model))
 
-;;;(define-predicate-method (ask-data data-type-of) (truth-value continuation)
-;;;  (unless (eql truth-value *true*)
-;;;    (error 'ji:model-can-only-handle-positive-queries
-;;;	   :query self
-;;;	   :model (type-of self)))
-;;;  (with-statement-destructured (object type) self
-;;;    (when (or (unbound-logic-variable-p object) (unbound-logic-variable-p type))
-;;;      (error 'ji:model-cant-handle-query
-;;;	     :query self
-;;;	     :model (type-of self)))
-;;;    (stack-let ((backward-support (list self *true* self)))
-;;;	       (funcall continuation backward-support))))
+(define-predicate-method (expand-forward-rule-trigger data-type-of) (support-variable-name truth-value context bound-variables)
+  (declare (ignore context bound-variables)) 
+  (unless (eql truth-value *true*)
+    (error "The rule pattern ~s does not have a truth-value of true" self))
+  (with-predication-maker-destructured (object type) self
+    `(:procedure
+      (typep ,object ',type)
+      ,support-variable-name
+      ,(list object type))))
+
+(define-predicate-method (ask-data data-type-of :around) (truth-value continuation)
+  (with-statement-destructured (object type) self
+    (cond
+     ;; if either variable is unbound just do the normal thing
+     ((or (unbound-logic-variable-p object) (unbound-logic-variable-p type))
+      (call-next-method))
+     ;; but if both are bound we can just use typep to check
+     ;; we assert the fact in the database and return a normal 
+     ;; justification for something in the database
+     ((and (eql truth-value *true*)
+	   (typep object type))
+      (let ((assertion (tell `[data-type-of ,object ,type] :justification :premise)))
+	(stack-let ((backward-support (list self *true* assertion)))
+		   (funcall continuation backward-support))))
+     ((and (eql truth-value *false*)
+	   (not (typep object type)))
+      (let ((assertion (tell `[not [data-type-of ,object ,type]] :justification :premise)))
+	(stack-let ((backward-support (list self *false* assertion)))
+		   (funcall continuation backward-support))))
+     )))
 
 ;;; dynamic assertions about controlflow status
 (define-predicate controlflow-satisfied (controlflow) (ltms:ltms-predicate-model))

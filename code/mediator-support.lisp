@@ -63,14 +63,15 @@
 
 (defun clear-registries () (clrhash *event-registry*))
 
-(defmacro register-event (event-name function-name &key (entry t) (exit t))
-  (let ((wrapper-name (implode (list "wrap" (string function-name)) #\-)))
+(defmacro register-event (event-name function-spec &key (entry t) (exit t))
+  (let* ((fpec-string (format nil "~a" function-spec))
+	 (wrapper-name (implode (list "wrap" fpec-string) #\-)))
     `(eval-when (:execute :load-toplevel)
        (let ((entry (gethash ',event-name *event-registry*)))
 	 (when (null entry)
 	   (setq entry (list nil ',wrapper-name))
 	   (setf (gethash ',event-name *event-registry*) entry) )
-	 (pushnew ',function-name (first entry)))
+	 (pushnew ',function-spec (first entry)))
        (def-fwrapper ,wrapper-name (&rest args)
 	 (let ((process mp:*current-process*))
 	   (cond
@@ -88,6 +89,11 @@
 		`(let ((return-values (multiple-value-list (call-next-fwrapper))))
 		   (notice-event ',event-name 'exit (get-universal-time) mp:*current-process* return-values)
 		   (apply #'values return-values))))))))))
+
+(defmacro unregister-event (event-name)
+  `(eval-when (:execute :load-toplevel)
+     (remhash ',event-name  *event-registry*)))
+
 
 (defun install-event (event-name &optional function-name)
   (let ((entry (gethash event-name *event-registry*)))
@@ -142,8 +148,8 @@
   (let ((declaration nil))
     (when (eql (first (first body)) 'declare)
       (push (pop body) declaration))
-    `(defmethod notice-event ,(ecase event-type (entry :before) (exit :after)) ((event-name (eql ',event-name)) (event-type (eql ',event-type))
-										universal-time process args)
+    `(defmethod notice-event ,(ecase event-type (entry :before) (exit :after))
+		((event-name (eql ',event-name)) (event-type (eql ',event-type)) universal-time process args)
        (declare (ignorable universal-time process))
        (destructuring-bind (,@arglist) args
 	 ,@declaration
