@@ -95,7 +95,6 @@
 		       (declare (ignore condition))
 		       (throw 'quick-exit (values)))))
 	      (funcall function)))
-	  
 	  (cond (contradiction-detected
 		 (remove-all-selected-components *search-control*)
 		 (solve *search-control* stream nil))
