@@ -73,6 +73,7 @@
 	   (setf (gethash ',event-name *event-registry*) entry) )
 	 (pushnew ',function-spec (first entry)))
        (def-fwrapper ,wrapper-name (&rest args)
+	 (declare (ignorable args))
 	 (let ((process mp:*current-process*))
 	   (cond
 	    ;; if we're not monitoring this thread
