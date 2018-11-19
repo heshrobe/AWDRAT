@@ -46,6 +46,7 @@
 
 (define-predicate component (parent-ensemble component-name component) (ltms:ltms-predicate-model))
 (define-predicate port (direction component port-name ) (ltms:ltms-predicate-model))
+(define-predicate state-variable (component variable-name) (ltms:ltms-predicate-model))
 (define-predicate control-port (direction component port-name) (ltms:ltms-predicate-model))
 
 ;;; This can be split, join, primitive of the name of an ensemble
@@ -70,6 +71,7 @@
 (define-predicate input (port component value) (ltms:ltms-predicate-model))
 (define-predicate output (port component value) (ltms:ltms-predicate-model))
 (define-predicate data-type-of (object type) (ltms:ltms-predicate-model))
+(define-predicate state-variable-value (object variable value) (ltms:ltms-predicate-model))
 
 (define-predicate-method (expand-forward-rule-trigger data-type-of) (support-variable-name truth-value context bound-variables)
   (declare (ignore context bound-variables)) 
@@ -891,7 +893,7 @@
 				 &key (top-level nil)
 				      (primitive nil)
 				      ;; structural parts
-				      inputs outputs
+				      inputs outputs state-variables
 				      components splits joins
 				      dataflows controlflows
 				      ;; events that are related to initiation, completion and internal progress
@@ -955,6 +957,7 @@
 	 (tell `[behavior ,component ,type])
 	 ,@(loop for input in inputs collect  `(tell `[port input ,component ,',input]))
 	 ,@(loop for output in outputs collect `(tell `[port output ,component ,',output]))
+	 ,@(loop for state-variable in state-variables collect `(tell `[state-variable ,component ,',state-variable]))
 	 ;; Behavior modes and their probabilities
 	 ,@(loop for behavior-mode in behavior-modes
 	       collect `(tell `[possible-model ,component ,',behavior-mode]))
