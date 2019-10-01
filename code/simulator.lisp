@@ -75,7 +75,7 @@
 
 (define-predicate-method (expand-forward-rule-trigger data-type-of) (support-variable-name truth-value context bound-variables)
   (declare (ignore context bound-variables)) 
-  (unless (eql truth-value *true*)
+  (unless (eql truth-value +true+)
     (error "The rule pattern ~s does not have a truth-value of true" self))
   (with-predication-maker-destructured (object type) self
     `(:procedure
@@ -92,15 +92,15 @@
      ;; but if both are bound we can just use typep to check
      ;; we assert the fact in the database and return a normal 
      ;; justification for something in the database
-     ((and (eql truth-value *true*)
+     ((and (eql truth-value +true+)
 	   (typep object type))
       (let ((assertion (tell `[data-type-of ,object ,type] :justification :premise)))
-	(stack-let ((backward-support (list self *true* assertion)))
+	(stack-let ((backward-support (list self +true+ assertion)))
 		   (funcall continuation backward-support))))
-     ((and (eql truth-value *false*)
+     ((and (eql truth-value +false+)
 	   (not (typep object type)))
       (let ((assertion (tell `[not [data-type-of ,object ,type]] :justification :premise)))
-	(stack-let ((backward-support (list self *false* assertion)))
+	(stack-let ((backward-support (list self +false+ assertion)))
 		   (funcall continuation backward-support))))
      )))
 
@@ -193,7 +193,7 @@
 (define-predicate-method (act-on-truth-value-change add-to-set :after) (old-truth-value &optional old-state)
   (declare (ignore old-truth-value old-state))
   (let* ((been-in-before (joshua:been-in-before-p self)))
-    (when (and been-in-before (eql (predication-truth-value self) *true*))
+    (when (and been-in-before (eql (predication-truth-value self) +true+))
       (with-statement-destructured (set new-value pre-sit post-sit) self
 	(declare (ignore pre-sit post-sit))
 	(when (listp set)
@@ -203,7 +203,7 @@
 (define-predicate-method (act-on-truth-value-change add-to-map :after) (old-truth-value &optional old-state)
   (declare (ignore old-truth-value old-state))
   (let* ((been-in-before (been-in-before-p self)))
-    (when (and been-in-before (eql (predication-truth-value self) *true*))
+    (when (and been-in-before (eql (predication-truth-value self) +true+))
       (with-statement-destructured (map key new-value pre-sit post-sit) self
 	(declare (ignore pre-sit post-sit))
 	(when (listp map)
@@ -501,7 +501,7 @@
 	 (situation (first (last statement)))
 	 (component (component situation)))
     (cond
-     ((eql (predication-truth-value self) *true*)
+     ((eql (predication-truth-value self) +true+)
       (push self (assertions situation))
       (cond 
        ((eql (before-or-after situation) :after)
@@ -712,7 +712,7 @@
 
 (define-predicate-method (act-on-truth-value-change controlflow-satisfied :after) (old-truth-value &optional old-state)
   (declare (ignore old-truth-value old-state))
-  (when (eql (predication-truth-value self) *true*)
+  (when (eql (predication-truth-value self) +true+)
     (with-statement-destructured (the-cf-assertion) self
       (with-statement-destructured (source-time source destination-time destination) the-cf-assertion
 	(declare (ignore  source))
@@ -763,7 +763,7 @@
 
 ;;;(define-predicate-method (act-on-truth-value-change input :after) (old-truth-value &optional old-state)
 ;;;  (declare (ignore old-truth-value old-state))
-;;;  (when (eql (predication-truth-value self) *true*)
+;;;  (when (eql (predication-truth-value self) +true+)
 ;;;    (with-statement-destructured (port component value) self
 ;;;	(declare (ignore value port))
 ;;;	(let ((all-input-names nil))
@@ -793,7 +793,7 @@
 
 (define-predicate-method (act-on-truth-value-change output :after) (old-truth-value &optional old-state)
   (declare (ignore old-truth-value old-state))
-  (when (eql (predication-truth-value self) *true*)
+  (when (eql (predication-truth-value self) +true+)
     (with-statement-destructured (port component value) self
 	(declare (ignore value port))
 	(let ((all-output-names nil))
@@ -2256,12 +2256,12 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 	  for assertion in state-to-try
 	  for interned-assertion = (tell assertion :justification :none)
 	  do (push interned-assertion assertions-made)
-	  do (justify interned-assertion *true* :assumption)
+	  do (justify interned-assertion +true+ :assumption)
 	     (with-statement-destructured (component model) interned-assertion
 	       (declare (ignore model))
 	       (tell `[execution-status ,component completed]))
 	  unless (loop for assertion in assertions-made
-		     always (eql (predication-truth-value assertion) *true*))
+		     always (eql (predication-truth-value assertion) +true+))
 	  return (values)
 	  finally (return (capture-solution sc))))))
 
