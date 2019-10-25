@@ -24,6 +24,16 @@
       `(("home;*.*"	,*awdrat-home-directory*)
 	("**;*.*"	,*awdrat-wild-directory*)
 	)))
+    (with-open-file (F #P"awdrat:home;my-logical-pathnames.lisp" :direction :output :if-exists :supersede :if-does-not-exist :create)
+      (format f "~%;;; awdrat")
+      (format f "~2%~s" "awdrat")
+      (loop for (a b) in (logical-pathname-translations "awdrat")
+          do (format f "~%'(~s ~s)" (namestring a) (namestring b)))
+      (terpri f)
+      )
+    (pushnew (namestring (truename #P"awdrat:home;my-logical-pathnames.lisp"))
+             (logical-pathname-translations-database-pathnames)
+             :test #'string-equal)
   )
 
 
