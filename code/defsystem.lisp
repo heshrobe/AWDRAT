@@ -1,4 +1,4 @@
-;;; -*- Syntax: Ansi-common-lisp; Package: cl-USER; Base: 10; Mode: LISP -*- 
+;;; -*- Syntax: Ansi-common-lisp; Package: cl-USER; Base: 10; Mode: LISP -*-
 
 (in-package :cl-user)
 
@@ -11,11 +11,11 @@
 	 (device (pathname-device loading-file))
 	 (home-dir (pathname-directory loading-file))
 	 (wild-dir (append home-dir (list :wild-inferiors))))
-    (setq *awdrat-home-directory* (make-pathname :directory home-dir 
-						 :host host 
+    (setq *awdrat-home-directory* (make-pathname :directory home-dir
+						 :host host
 						 :device device)
 	  *awdrat-wild-directory* (make-pathname :directory wild-dir
-						 :host host 
+						 :host host
 						 :device device
 						 :type :wild
 						 :name :wild
@@ -31,6 +31,7 @@
           do (format f "~%'(~s ~s)" (namestring a) (namestring b)))
       (terpri f)
       )
+    #+ALLEGRO
     (pushnew (namestring (truename #P"awdrat:home;my-logical-pathnames.lisp"))
              (logical-pathname-translations-database-pathnames)
              :test #'string-equal)
@@ -38,7 +39,7 @@
 
 
 #+allegro
-(defsystem awdrat 
+(defsystem awdrat
     (:default-pathname "awdrat:home;"
 	:default-module-class separate-destination-module)
   (:serial
@@ -53,3 +54,25 @@
 
    ))
 
+#+swank
+(pushnew (cons "AWDRAT" ji::*joshua-readtable*)
+	 swank:*readtable-alist*
+	 :key #'first
+	 :test #'string=)
+
+
+#-allegro
+(asdf:defsystem awdrat
+  :name "AWDRAT"
+  :description "Model based diagnosis for cyber security"
+  :maintainer "Howie Shrobe"
+  :pathname "."
+  :components ((:file "package-definition")
+               (:joshua-file "mediator-support" :depends-on ("package-definition"))
+               (:joshua-file "simulator" :depends-on ("mediator-support"))
+               (:joshua-file "timing" :depends-on ("simulator"))
+               (:joshua-file "mediator-coupling" :depends-on ("timing"))
+               (:joshua-file "editor" :depends-on ("mediator-coupling"))
+               (:joshua-file "node-mapper" :depends-on ("editor"))
+               (:joshua-file "resources" :depends-on ("node-mapper"))
+               ))

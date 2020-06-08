@@ -21,14 +21,14 @@
   then [no-bad-events ?component])
 
 (defun diagnose-from-bad-event (component no-bad-event-assert bad-event-assert)
-  ;; The bad event assertion is only made as a premise by 
+  ;; The bad event assertion is only made as a premise by
   ;; the event tracking part of the simulator
   ;; Unjustify it now to prevent a tms contradiction
   ;; before we're ready to handle it.
   ;; (unjustify bad-event-assert)
   ;; set up so that when we re-justify it there will be a contradition
-  (tell [ltms:contradiction] 
-	:justification `(bad-event-conflict 
+  (tell [ltms:contradiction]
+	:justification `(bad-event-conflict
 			 (,bad-event-assert ,no-bad-event-assert)))
   (with-statement-destructured (event-name time the-component args) bad-event-assert
     (declare (ignore time args the-component))
@@ -39,7 +39,7 @@
 
 (defvar *search-control* nil)
 
-(define-condition execution-aborted-due-to-bad-event (error) 
+(define-condition execution-aborted-due-to-bad-event (error)
   ((component :reader component :initarg :component)
    (event-name :reader event-name :initarg :event-name))
   (:report (lambda (self stream)
@@ -49,12 +49,48 @@
 (defparameter *my-ensemble* nil)
 (defparameter *my-component* nil)
 
+;;; stolen from clim-utils lisp-utilities
+(eval-when (:compile-toplevel :load-toplevel)
+  (defvar *gensymbol* 0)
+  (defun gensymbol (&rest parts)
+    (declare (dynamic-extent parts))
+    (when (null parts) (setf parts '(gensymbol)))
+    (make-symbol (format nil "~{~A-~}~D" parts (incf *gensymbol*))))
+
+  (defmacro letf-globally (places-and-vals &body body)
+    ;; I don't want to use LETF-globally, mind you, but I can't easily implement
+    ;; LETF{-not-globally} without something like sys:%bind-location.
+    ;; Of course, this one is really LETF*-GLOBALLY, but don't tell anyone.
+    ;; A minor optimization: when you bind something to itself or don't
+    ;;  say what to bind it to, it doesn't get SETF'd, since it isn't
+    ;;  being changed.
+    (if (null places-and-vals)
+        `(progn ,@body)
+        (let ((let-forms nil)
+              (set-forms nil)
+              (unwind-forms nil))
+          ;; remember that we can't use SCL:LOOP
+          (map nil #'(lambda (place-and-val)
+                       (let* ((place (pop place-and-val))
+                              (val-p (not (null place-and-val)))
+                              (val (and val-p (pop place-and-val)))
+                              (temp-var (gensymbol 'letf-globally-temp)))
+                         (when (and val-p (equal place val)) (setf val-p nil)) ;bind to itself?
+                         (push `(,temp-var ,place) let-forms)
+                         (when val-p (push place set-forms) (push val set-forms))
+                         (push temp-var unwind-forms) (push place unwind-forms)))
+               places-and-vals)
+          `(let ,(nreverse let-forms)
+             (unwind-protect
+                  (progn (setf ,@(nreverse set-forms)) ,@body)
+               (setf ,@unwind-forms)))))))
+
 (defun harnessing (function ensemble-name
 		   &key
-		   (monitored-threads (list mp:*current-process*))
+		   (monitored-threads (list #+allegro mp:*current-process* #+sbcl sb-thread:*current-thread*))
 		   (attack-models *attack-models*)
 		   (stream '*standard-output*))
-  (clim-utils:letf-globally ((*monitored-threads* monitored-threads))
+  (letf-globally ((*monitored-threads* monitored-threads))
     (clear)
     (install-all-events)
     (unwind-protect
@@ -65,13 +101,14 @@
 	       (contradiction-detected nil))
 	  (catch 'quick-exit
 	    (handler-bind
-		((ltms:ltms-contradiction 
+		((ltms:ltms-contradiction
 		  #'(lambda (condition)
 		      (setq contradiction-detected t)
 		      (format stream "~%Contradiction detected:~% In ensemble ~a ~% Active attack models ~{~a~^ ,~}" ensemble-name attack-models)
-		      (multiple-value-bind (ignore ignore true-support false-support ignore)
+		      (multiple-value-bind (ignore1 ignore2 true-support false-support ignore3)
+
 			  (destructure-justification (current-justification (tms-contradiction-contradictory-predication condition)))
-			(declare (ignore ignore))
+                          (declare (ignore ignore1 ignore2 ignore3))
 			(let ((*print-length* 4))
 			  (format stream "~2%Contradictory Predications: ")
 			  (clim:indenting-output (stream 4)
@@ -83,7 +120,7 @@
 		      (setq *search-control*
 			(set-up-search-control (object-name *my-ensemble*) *my-ensemble* attack-models))
 		      (multiple-value-bind (nogood assumptions) (nogood-from-condition condition)
-			(declare (ignore nogood))		
+			(declare (ignore nogood))
 			(loop for clause in assumptions
 			    do (multiple-value-bind (mnemonic assertion) (destructure-justification clause)
 				 (declare (ignore mnemonic))
@@ -103,7 +140,7 @@
       (values))))
 
 (defmacro with-harness ((ensemble-name
-			 &key (monitored-threads '(mp:*current-process*))
+			 &key (monitored-threads '(#+allegro mp:*current-process* #+sbcl sb-thread:*current-thread*))
 			      (attack-models '*attack-models*)
 			      (stream '*standard-output*))
 			&body body)
@@ -112,7 +149,7 @@
 		 :monitored-threads (list ,@monitored-threads)
 		 :attack-models ,attack-models
 		 :stream ,stream)))
-		
+
 
 (defvar *trust-model* nil)
 
@@ -134,7 +171,7 @@
       (clim:indenting-output (stream 4)
 	(loop for entry in (nogoods sc)
 	    do (terpri stream)
-	       (loop for pred in (rest entry) 
+	       (loop for pred in (rest entry)
 		   do (terpri stream)
 		      (ji:print-database-predication-without-truth-value pred stream)))))
     (format stream "~2%Calculating Probabilities of Resource States~%")
@@ -155,7 +192,7 @@
   (loop for (thing . prob) in set-of-updates
       for entry = (assoc thing *trust-model* :test #'string-equal)
       if entry
-      do (setf (cdr entry) prob) 
+      do (setf (cdr entry) prob)
       else do (push (cons thing prob) *trust-model*)))
 
 (defun write-out-trust-model (&key (trust-model-pathname "./trust-model.lisp"))
@@ -183,7 +220,7 @@
       (loop for file-name in *loaded-image-files*
 	  for suspect = (pathname file-name)
 	  for cousins = (loop for type in '("bmp" "gif" "png")
-			  collect (merge-pathnames 
+			  collect (merge-pathnames
 				   (make-pathname :type type)
 				   suspect))
 	  do (loop for cousin in cousins
@@ -211,9 +248,9 @@
 (defvar *presentation-process* nil)
 
 (defun get-presentation-window ()
-  (unless *presentation-window* 
-    (setq *presentation-window* 
-      (clim:open-window-stream 
+  (unless *presentation-window*
+    (setq *presentation-window*
+      (clim:open-window-stream
        :label "Situation Display"
        :scroll-bars t
        :width 400 :height 300 :left 200 :top 100)))
@@ -226,7 +263,7 @@
 (defun show-situation-display ()
   (get-presentation-window)
   (clim:window-stack-on-top *presentation-window*)
-  (labels 
+  (labels
       ((get-children (ensemble)
 	 (let ((stuff nil))
 	   (ask `[component ,ensemble ?name ?comp]
@@ -234,7 +271,7 @@
 		    (declare (ignore just))
 		    (let ((comp-status (get-component-status ?comp)))
 		      (when comp-status
-			(push (list ?name 
+			(push (list ?name
 				    comp-status
 				    (get-component-children ?comp))
 			      stuff)))))

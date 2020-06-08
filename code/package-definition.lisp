@@ -3,15 +3,16 @@
 (in-package :cl-user)
 
 (defpackage awdrat
-  (:import-from "MP" "PROCESS-RUN-FUNCTION")
-  (:import-from "EXCL" "DEF-FWRAPPER" "FWRAP" "FUNWRAP" "CALL-NEXT-FWRAPPER")
+  #+Allegro (:import-from "MP" "PROCESS-RUN-FUNCTION")
+  #+Allegro (:import-from "EXCL" "DEF-FWRAPPER" "FWRAP" "FUNWRAP" "CALL-NEXT-FWRAPPER")
+  #+sbcl (:import-from "SB-IMPL" "ENCAPSULATE" "UNENCAPSULATE")
   (:nicknames "aw")
   (:export ;; Trust Model Associated
-	   "READ-IN-TRUST-MODEL" 
+	   "READ-IN-TRUST-MODEL"
 	   "TRUST-MODEL-CASE"
-	   "UPDATE-TRUST-MODEL" 
+	   "UPDATE-TRUST-MODEL"
 	   "WRITE-OUT-TRUST-MODEL"
-	   "*TRUST-MODEL*"	   
+	   "*TRUST-MODEL*"
 	   ;; Defining Architectural Model
 	   "DEFINE-ENSEMBLE" "DEFBEHAVIOR-MODEL" "DEFSPLIT"
 	   "DEFINE-ATTACK-MODEL" "BUILD-OUTSIDE" "BUILD-INSIDE"
@@ -24,25 +25,22 @@
 	   "GENERATE-WRAPPER-SUPPORT"
 	   "DEFTRACER"
 	   "NOTICE-EVENT"
-	   "SEARCH-CONTROL" 
+	   "SEARCH-CONTROL"
 	   "ENSEMBLE"
-	   "IO-NAMED" 
-	   "SITUATION-NAMED" 
+	   "IO-NAMED"
+	   "SITUATION-NAMED"
 	   "INTERVAL-NAMED"
-	   "*REPORT-OUT-LOUD*" 
+	   "*REPORT-OUT-LOUD*"
 	   "*EDITOR-IN-CONTROL*"
 	   "FIND-SOLUTIONS"
 	   "INIT-CASE"
 	   "INPUT" "OUTPUT" "BEFORE" "AFTER" "DURING"
 	   ;; Getting Diagnosis out
 	   "ALL-RESOURCE-PROBABILITIES"
-	   "SOLUTION-STATES" 
+	   "SOLUTION-STATES"
 	   "STATE-ALIST-BY-NAME"
 	   "CONVERT-RESOURCE-PROBABILITIES"
 	   ;; Couplling to the AWDRAT GUI
-	   "RUN-EDITOR" 
+	   "RUN-EDITOR"
 	   )
   (:USE COMMON-LISP JOSHUA))
-
-
-

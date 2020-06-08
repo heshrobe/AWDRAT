@@ -16,7 +16,7 @@
 
 (defun implode (list &optional (delimiter #\.))
   (intern
-   (string-upcase  
+   (string-upcase
     (with-output-to-string (f)
       (loop for first = t then nil
 	  for term in list
@@ -28,24 +28,25 @@
 ;;;
 ;;;  Registering Events
 ;;;
-;;; A registered event is just an fwrapper that calls notice-event (optionally) on entry and exit of the wrapped function
+;;; A registered event is just an fwrapper (in allegro) or an encapsulation (in sbcl)
+;;; that calls notice-event (optionally) on entry and exit of the wrapped function
 ;;; 1) The call to notice-event includes:
 ;;; 2) the event name
-;;; 3) a key-word (:entry or :exit) 
+;;; 3) a key-word (:entry or :exit)
 ;;; 4) the arguments provided to the function (as a list) for entry events
 ;;;    or the return values produced by the function (as a list) for exit events
-;;; 5) the universal-time of the event 
+;;; 5) the universal-time of the event
 ;;; 6) the process in which the event was noticed.
 ;;;
 ;;; this also makes an entry in the event registry
-;;; The entry is indexed under event-name 
+;;; The entry is indexed under event-name
 ;;; and contains a list of two things: t
 ;;; 1) A list of functions wrapped with this event noticer
 ;;; 2) The fwrapper name
 ;;; This allows us to have several functions produce the same event.  Notice that because we gobble all the args into a single &rest value
 ;;; the same fwrapper can be applied to multiple functions with different arglist (even non-congruent ones).
 ;;; similarly for return values.
-;;; 
+;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; reporting the event to the simulator
@@ -55,6 +56,16 @@
 ;;; 3) the universal time at which the event was noticed
 ;;; 4) the process it was noticed in
 ;;; 5) the args and/or the return-value
+
+
+#+sbcl
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro fwrap (name type function)
+    `(encapsulate ,name ,type ,function))
+  (defmacro funwrap (name type)
+    `(unencapsulate ,name ,type)))
+
+
 
 (defvar *event-registry* (make-hash-table :test #'equal))
 (defparameter *monitored-threads* :all)
@@ -72,6 +83,7 @@
 	   (setq entry (list nil ',wrapper-name))
 	   (setf (gethash ',event-name *event-registry*) entry) )
 	 (pushnew ',function-spec (first entry)))
+       #+allegro
        (def-fwrapper ,wrapper-name (&rest args)
 	 (declare (ignorable args))
 	 (let ((process mp:*current-process*))
@@ -89,6 +101,25 @@
 	     ,(when exit
 		`(let ((return-values (multiple-value-list (call-next-fwrapper))))
 		   (notice-event ',event-name 'exit (get-universal-time) mp:*current-process* return-values)
+		   (apply #'values return-values)))))))
+       #+sbcl
+       (defun ,wrapper-name (next-function &rest args)
+	 (declare (ignorable args))
+	 (let ((process sb-thread:*current-thread*))
+	   (cond
+	    ;; if we're not monitoring this thread
+	    ;; because it's not one of a selected set
+	    ;; and we're not monitoring all threads
+	    ;; then just invoke the function
+	    ((not (or (eql *monitored-threads* :all)
+		      (member process *monitored-threads*)))
+	     (apply next-function args))
+	    (t ;;otherwise send the events if appropriate
+	     ,(when entry
+		`(notice-event ',event-name 'entry (get-universal-time) sb-thread:*current-thread* args))
+	     ,(when exit
+		`(let ((return-values (multiple-value-list (call-next-fwrapper))))
+		   (notice-event ',event-name 'exit (get-universal-time) sb-thread:*current-thread* return-values)
 		   (apply #'values return-values))))))))))
 
 (defmacro unregister-event (event-name)
@@ -133,7 +164,7 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Macro for defining Event noticers that do something other than 
+;;; Macro for defining Event noticers that do something other than
 ;;; reporting the event to the simulator
 ;;; this macro is used by the lisp stubs
 
@@ -160,3 +191,14 @@
 	   ;; This offers the possibility of just returning
 	   (return ()
 		   :report "Return from tracer"))))))
+
+
+#|
+
+
+
+
+
+
+
+|#

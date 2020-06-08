@@ -9,14 +9,14 @@
 ;;;
 ;;; The basic data model
 ;;;
-;;; Components: 
+;;; Components:
 ;;;  Have two parts: The interface and the implementation
 ;;;   Interface: input and output ports as well pre-, post- and invariant conditions
 ;;;   Implementation: Component parts with their ports
 ;;;                   Splits and Joins with their branches and ports
 ;;;                    control-flows data-flows connecting all of the above.
 ;;;  A Behavior model can be provided for the component type
-;;;                     allowing simulation without decompositoin 
+;;;                     allowing simulation without decompositoin
 ;;;                   (Actually there can be several of these allowing a run-time implementation choice)
 ;;;
 ;;;   When the implementation is instantiated to represent the innards of a component there are
@@ -27,7 +27,7 @@
 ;;;
 ;;; Control flows link an output branch of a component to another component
 ;;;                    or a component to an input branch of a join
-;;;    for notational simplicity a component that is neither a branch or join is thought of 
+;;;    for notational simplicity a component that is neither a branch or join is thought of
 ;;;                   having a  branches called "before" and "after", allowing after-before, after-after
 ;;;                    and before-before control flow constraints.  Initially we'll only worry about
 ;;;                        after-before links
@@ -56,7 +56,7 @@
 (define-predicate behavior (component type) (ltms:ltms-predicate-model))
 
 (define-predicate dataflow (producer-port producer consumer-port consumer) (ltms:ltms-predicate-model))
-(define-predicate controlflow (producer-brancy producer consumer-branch consumer) 
+(define-predicate controlflow (producer-brancy producer consumer-branch consumer)
   (ltms:ltms-predicate-model))
 
 
@@ -74,7 +74,7 @@
 (define-predicate state-variable-value (object variable value) (ltms:ltms-predicate-model))
 
 (define-predicate-method (expand-forward-rule-trigger data-type-of) (support-variable-name truth-value context bound-variables)
-  (declare (ignore context bound-variables)) 
+  (declare (ignore context bound-variables))
   (unless (eql truth-value +true+)
     (error "The rule pattern ~s does not have a truth-value of true" self))
   (with-predication-maker-destructured (object type) self
@@ -90,7 +90,7 @@
      ((or (unbound-logic-variable-p object) (unbound-logic-variable-p type))
       (call-next-method))
      ;; but if both are bound we can just use typep to check
-     ;; we assert the fact in the database and return a normal 
+     ;; we assert the fact in the database and return a normal
      ;; justification for something in the database
      ((and (eql truth-value +true+)
 	   (typep object type))
@@ -131,6 +131,9 @@
 ;;; static and dynamic assertions about "mode's"
 (define-predicate possible-model (component model) (ltms:ltms-predicate-model))
 
+
+
+
 ;;; assertions about attack exploits and vulnerabilities
 (define-predicate attack (component attack-name attack-type) (ltms:ltms-predicate-model))
 (define-predicate has-vulnerability (resource vulnerability) (ltms:ltms-predicate-model))
@@ -157,12 +160,12 @@
 ;;;
 ;;;  Sets and Maps
 ;;; Assertions and classes
-;;; 
+;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; An immutable set with fixed membership specified at make-instance time
 ;;; useful for the set of allowable events
-;;; As assertions this says that the members are exactly those specified in 
+;;; As assertions this says that the members are exactly those specified in
 ;;; the list contained in the "members" instance variable
 (defclass fixed-membership-set ()
   ((members :initform nil :initarg :members :reader members))
@@ -171,7 +174,7 @@
 (defmethod print-object ((set fixed-membership-set) stream)
   (format stream "#<Set-of ~{~a~^, ~}" (members set)))
 
-;;; Assertions for core data modeling  
+;;; Assertions for core data modeling
 (define-predicate add-to-set (set new-value pre-situation post-situation) (ltms:ltms-predicate-model))
 (define-predicate add-to-map (map key value pre-situation post-situation) (ltms:ltms-predicate-model))
 
@@ -239,6 +242,7 @@
   ((presituation :accessor presituation :initarg :presituation)))
 
 (defmethod initialize-instance :after ((c has-presituation-mixin) &rest initargs)
+  (declare (ignore initargs))
   (let* ((name (object-name c))
 	 (before-situation-name (make-name 'before name))
 	 (before-situation (make-instance 'situation-object
@@ -254,9 +258,10 @@
   ((postsituation :accessor postsituation :initarg :postsituation)))
 
 (defmethod initialize-instance :after ((c has-postsituation-mixin) &rest initargs)
+  (declare (ignore initargs))
   (let* ((name (object-name c))
 	 (after-situation-name (make-name 'after name))
-	 (after-situation 
+	 (after-situation
 	  (make-instance 'situation-object
 	    :name after-situation-name
 	    :component c
@@ -270,13 +275,14 @@
   ((interval :accessor spanning-interval :initarg :interval)))
 
 (defmethod initialize-instance :after ((c has-interval-mixin) &rest initargs)
+  (declare (ignore initargs))
   (let* ((name (object-name c))
 	 (interval-name (make-name 'interval name))
 	 (interval (make-instance 'interval-object
 		     :name interval-name
 		     :component c)))
     (tell `[interval ,c during ,interval])
-    (setf (spanning-interval c) interval))) 
+    (setf (spanning-interval c) interval)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -285,7 +291,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; has parent mixin should be part of anything that is a direct
-;;; part of the component hierarchy 
+;;; part of the component hierarchy
 ;;;  e.g. splits, joins, components
 ;;;  buy not the branches of splits and joins
 ;;;  or dataflows, controlflow, ports, etc.
@@ -310,6 +316,7 @@
   (format stream "<~s ~a>" (type-of thing) (object-name thing)))
 
 (defmethod initialize-instance :after ((c has-parent-mixin) &rest initargs)
+  (declare (ignore initargs))
   (let* ((name (object-name c))
 	 (parent (parent c)))
     (tell `[component ,parent ,name ,c])
@@ -330,7 +337,7 @@
   ((branch-owner :accessor branch-owner :initarg :branch-owner :initform nil)
    (branch-name :accessor branch-name :initarg :branch-name :initform nil)))
 
-(defmethod initialize-instance :after ((b primitive-branch-mixin) 
+(defmethod initialize-instance :after ((b primitive-branch-mixin)
 				       &key branch-owner branch-name)
   (tell `[component-type ,b ,(type-of b)])
   (when (and branch-name branch-owner)
@@ -347,16 +354,16 @@
 ;;; These are assume to consume no time, thus no interval during their execution
 ;;; Split's have a pre-situation, the post-situation belongs to the branch
 ;;; Joins have a post-situation, the pre-situation belongs to the branch
-(defclass split-object (has-parent-mixin 
-			has-presituation-mixin 
+(defclass split-object (has-parent-mixin
+			has-presituation-mixin
 			has-branches-mixin)
   ())
 
 (defmethod initialize-instance :after ((s split-object) &key)
   (tell `[component-type ,s split]))
 
-(defclass join-object (has-parent-mixin 
-		       has-branches-mixin 
+(defclass join-object (has-parent-mixin
+		       has-branches-mixin
 		       has-postsituation-mixin)
   ())
 
@@ -365,13 +372,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Components 
+;;; Components
 ;;;  both primitive and ones with implementations
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defclass component-mixin (has-parent-mixin 
-			   has-presituation-mixin 
+(defclass component-mixin (has-parent-mixin
+			   has-presituation-mixin
 			   has-postsituation-mixin
 			   has-interval-mixin
 			   )
@@ -437,7 +444,7 @@
 
 ;;; A resource has an owner (the highest placd in the hierarchy that it's know about)
 ;;;  and a set of users (any component below that the employs the resource)
-;;;  
+;;;
 (defclass resource-object (has-name-mixin has-qualified-name-mixin)
   ((type :accessor resource-type :initarg :type)
    ;; we have a model in which a single component owns the resource
@@ -503,12 +510,12 @@
     (cond
      ((eql (predication-truth-value self) +true+)
       (push self (assertions situation))
-      (cond 
+      (cond
        ((eql (before-or-after situation) :after)
 	;; want to propagate along data-flows
 	(ask `[dataflow ?output ,component ?input ?other-component]
 	     #'(lambda (just1)
-		 (when 
+		 (when
 		     ;; does this assertion mention the associated output
 		     (block foo
 		       (ask `[output ?output ,component ?value]
@@ -516,7 +523,7 @@
 				(declare (ignore ignore))
 				(when (member ?value (predication-statement self))
 				  (return-from foo t))))
-		       nil)				  
+		       nil)
 		   (ask [situation ?other-component ?time ?other-situation]
 			#'(lambda (just2)
 			    (when (or (eql ?time 'before)
@@ -572,7 +579,7 @@
     ;; for each input of the box
     (loop for assertion in assertions
 	do (push-outside-assertion-inside assertion component))))
-      
+
 (defun push-outside-assertion-inside (assertion component)
   (flet ((push-assertion (assertion new-situation support)
 	   (let* ((statement (predication-statement assertion))
@@ -625,8 +632,8 @@
 ;;;
 ;;;(defun clear-top-level-ensemble (ensemble-name)
 ;;;  (let ((victims nil))
-;;;    (labels 
-;;;	((kill-it (just) 
+;;;    (labels
+;;;	((kill-it (just)
 ;;;	   (push (ask-database-predication just) victims))
 ;;;	 ;; This is called with an outside-box. It first wipes out everything about the outside
 ;;;	 ;; then finds the inside-plan, finds all components in it (which are outside-boxes)
@@ -645,12 +652,12 @@
 ;;;	   (ask `[situation ,ensemble ?position ?situation] #'kill-it)
 ;;;	   (ask `[dataflow ?port-name ,ensemble ?other-port ?other-component] #'kill-it)
 ;;;	   (ask `[dataflow ?port-name  ?other-component ?other-port ,ensemble] #'kill-it)
-;;;	   (ask `[controlflow ?port-name ,ensemble ?other-port ?other-component] 
+;;;	   (ask `[controlflow ?port-name ,ensemble ?other-port ?other-component]
 ;;;		#'(lambda (just)
 ;;;		    (let ((the-assertion (ask-database-predication just)))
 ;;;		      (ask `[controlflow-satisfied ,the-assertion] #'kill-it)
 ;;;		      (kill-it just))))
-;;;	   (ask `[controlflow ?other-port ?other-component ?port-name ,ensemble] 
+;;;	   (ask `[controlflow ?other-port ?other-component ?port-name ,ensemble]
 ;;;		#'(lambda (just)
 ;;;		    (let ((the-assertion (ask-database-predication just)))
 ;;;		      (ask `[controlflow-satisfied ,the-assertion] #'kill-it)
@@ -665,7 +672,7 @@
 ;;;	   (ask `[input ?port ,ensemble ?input] #'kill-it)
 ;;;	   (ask `[output ?port ,ensemble ?output] #'kill-it)
 ;;;	   (ask `[all-controlflows-satisfied ,ensemble] #'kill-it)
-;;;	   (ask `[all-terminal-controlflows-satisfied ,ensemble] #'kill-it)    
+;;;	   (ask `[all-terminal-controlflows-satisfied ,ensemble] #'kill-it)
 ;;;	   (ask `[all-inputs-present ,ensemble] #'kill-it)
 ;;;	   (ask `[prerequisites-satisfied ,ensemble] #'kill-it)
 ;;;	   (ask `[potentially [earliest-arrival-time ? ,ensemble ?]] #'kill-it)
@@ -684,7 +691,7 @@
 ;;;		    (ask [resource ?sub-ensemble ?name ?resource]
 ;;;			 #'(lambda (stuff)
 ;;;			     (kill-it stuff)
-;;;			     (ask [resource-might-have-been-attacked ?resource ?attack] 
+;;;			     (ask [resource-might-have-been-attacked ?resource ?attack]
 ;;;				  #'(lambda (stuff)
 ;;;				      (ask [attack-implies-compromised-mode ?attack ?resource ?mode ?likelihood] #'kill-it)
 ;;;				      (kill-it stuff)))
@@ -885,11 +892,11 @@
   )
 
 ;;; Fix Me:
-;;; This doesn't deal with the idea that there can be a shared dependency on a 
-;;; common resource.  In which case it's specified at the lub of the things that 
+;;; This doesn't deal with the idea that there can be a shared dependency on a
+;;; common resource.  In which case it's specified at the lub of the things that
 ;;; share it and is passed down as an argument as the inside is built.
 
-(defmacro define-component-type (type 
+(defmacro define-component-type (type
 				 &key (top-level nil)
 				      (primitive nil)
 				      ;; structural parts
@@ -970,7 +977,7 @@
 		     collect `(let ((resource (instantiate-resource ',type ',resource-name component)))
 				(push resource (resources component))
 				(push (cons ',resource-name resource) resource-alist)))
-	       ;; Conditional Probabilities. 
+	       ;; Conditional Probabilities.
 	       ;; These entries have the syntax:
 	       ;; Behavor-mode <a list of (resource-name resource-mode) pairs> Probability
 	       ,@(loop for (behavior-model dependency-list probability) in behavior-dependencies
@@ -982,10 +989,10 @@
 	 component))
      (defmethod build-implementation ((type (eql ',type)) parent)
        ,@(loop for (role-name behavior inputs branches) in splits
-	     for branch-names in (loop for (role-name nil nil branches) in splits 
+	     for branch-names in (loop for (role-name nil nil branches) in splits
 				     collect (loop for branch in branches collect (smash role-name branch)))
 	     collect `(let ((the-split (make-instance 'split-object
-					 :name ',role-name 
+					 :name ',role-name
 					 :type 'split
 					 :parent parent)))
 			(tell `[behavior ,the-split ,',behavior])
@@ -994,7 +1001,7 @@
 			,@(loop for name in branches
 			      for branch-name in branch-names
 			      collect `(make-instance 'split-branch
-					 :name ',branch-name 
+					 :name ',branch-name
 					 :branch-name ',name
 					 :branch-owner the-split
 					 :parent parent))))
@@ -1003,17 +1010,17 @@
 				    collect (loop for branch in branches
 						collect (smash role-name branch)))
 	     collect `(let ((the-join (make-instance 'join-object
-					:name ',role-name 
+					:name ',role-name
 					:type 'join
 					:component parent)))
-			,@(loop for input in inputs 
+			,@(loop for input in inputs
 			      collect `(tell `[port output ,the-join ,',input]))
 			,@(loop for name in branches
 			      for branch-name in (loop for (role-name nil branches) in joins
 						     collect (loop for branch in branches
 								 collect (smash role-name branch)))
 			      collect `(let ((the-branch (make-instance 'join-branch
-							   :name ',branch-name 
+							   :name ',branch-name
 							   :branch-name ',name
 							   :branch-owner the-join
 							   :parent parent)))
@@ -1023,13 +1030,13 @@
 	     for type = (getf plist :type)
 	     collect `(let ((sub-component (build-interface ',type ',role-name parent)))
 			(build-exhaustives sub-component ',models)
-			,@(loop for model in models 
+			,@(loop for model in models
 			      collect `(tell `[possible-model ,sub-component ,',model]))))
 	 ;;; can go from normal to normal, or split-branch to normal or normal to join-branch
 	 ;;; out-port and in-port are either before or after (can be extended to before-before, etc.)
        ,@(loop for (from-port-name from-component-name to-port-name to-component-name) in controlflows
-	     collect 
-	       (cond 
+	     collect
+	       (cond
 		((eql to-component-name type)
 		 `(make-controlflow (component-named parent ',from-component-name) ',from-port-name
 				    parent ',to-port-name))
@@ -1037,10 +1044,10 @@
 		 `(make-controlflow parent ',from-port-name
 				    (component-named parent ',to-component-name) ',to-port-name))
 		(t
-		 `(make-controlflow (component-named parent ',from-component-name) ',from-port-name 
+		 `(make-controlflow (component-named parent ',from-component-name) ',from-port-name
 				    (component-named parent ',to-component-name) ',to-port-name))))
        ,@(loop for (from-port-name from-component-name to-port-name to-component-name) in dataflows
-	     collect (cond 
+	     collect (cond
 		      ((eql to-component-name type)
 		       `(make-dataflow (component-named parent ',from-component-name) ',from-port-name
 				       parent ',to-port-name))
@@ -1074,15 +1081,15 @@
 (defun build-exhaustives (component models)
   (tell [ltms:contradiction]
         :justification `(must-have-a-model
-			 nil 
-			 ,(loop for model in models 
+			 nil
+			 ,(loop for model in models
 			      collect (tell `[selected-model ,component ,model]
 					    :justification :none)))))
 
 (defun hack-situation-into-assertion (situation assertion)
   (labels ((hack-a-primitive-statement (assertion)
 	     (if (and (listp assertion) (eql (first assertion) 'predication-maker))
-		 (multiple-value-bind (predicate connective body) 
+		 (multiple-value-bind (predicate connective body)
 		     (destructure-predication-maker assertion)
 		   (if (subtypep predicate 'situation-tagged-mixin)
 		       (package-up-assertion connective body)
@@ -1097,7 +1104,7 @@
 	       (values (predication-maker-predicate assertion) connective body)))
 	   (hack-a-statement (assertion)
 	     (if (and (listp assertion) (eql (first assertion) 'predication-maker))
-		 (multiple-value-bind (predicate connective body) 
+		 (multiple-value-bind (predicate connective body)
 		     (destructure-predication-maker assertion)
 		   (cond
 		    ((member predicate '(and or not))
@@ -1115,7 +1122,7 @@
   (intern (format nil "~{~a~^-~}" names)))
 
 
-(defmacro defbehavior-model ((component-type &rest model-names) 
+(defmacro defbehavior-model ((component-type &rest model-names)
 			     &key prerequisites post-conditions inputs outputs
 				  invariants wrap-points
 				  allowable-events
@@ -1143,7 +1150,7 @@
 		  (output-lvs nil)
 		  output-assertions
 		  input-assertions)
-	     (loop for output in outputs 
+	     (loop for output in outputs
 		 for lv-name = (intern (format nil "?~a" output))
 		 for lv = `(logic-variable-maker ,lv-name)
 		 do (push `(predication-maker '(output ,output ,component-variable ,lv)) output-assertions)
@@ -1158,12 +1165,12 @@
 		     '(and
 		       (predication-maker '(behavior ,component-variable ,component-type))
 		       (predication-maker '(selected-model ,component-variable ,model-name))))
-		 then (predication-maker `(allowable-events-for ,,component-variable 
+		 then (predication-maker `(allowable-events-for ,,component-variable
 								,(make-instance 'fixed-membership-set :members ',allowable-events))))
 	      generated-rules)
 	     ;; This generates the rules for prerequisite-satisfied and all-inputs-present
-	     ;; but only if the model is normal.  
-	     ;; In other models it's redundant which suggests a change in syntax in which 
+	     ;; but only if the model is normal.
+	     ;; In other models it's redundant which suggests a change in syntax in which
 	     ;; there is only one form in which inputs, outputs and prerequisites are stated once
 	     ;; and then there's a post-conditions for each model.
 	     ;;
@@ -1182,8 +1189,8 @@
 		generated-rules)
 	       (push
 		`(defrule ,prereqs-name (:forward)
-		   if (predication-maker 
-		       '(and 
+		   if (predication-maker
+		       '(and
 			 (predication-maker '(behavior ,component-variable ,component-type))
 			 ,@input-assertions
 			 (predication-maker '(situation ,component-variable before ,pre-situation-variable))
@@ -1198,7 +1205,7 @@
 	     (push
 	      `(defrule ,name (:forward)
 		 if (predication-maker
-		     '(and 
+		     '(and
 		       (predication-maker '(behavior ,component-variable ,component-type))
 		       (predication-maker '(selected-model ,component-variable ,model-name))
 		       (predication-maker '(execution-status ,component-variable completed))
@@ -1210,7 +1217,7 @@
 		       ,@prerequisites
 		       ))
 		 then (predication-maker
-		       '(and 
+		       '(and
 			 ,@invariants
 			 ,@post-conditions)))
 	      generated-rules)))
@@ -1222,7 +1229,7 @@
 ;;; Defining Resource Types
 ;;;  This takes the modes and vulnerabilities of the resouce type
 ;;;  As above, there's a generic function Instantiate-Resource to contruct the resource
-;;; 
+;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgeneric Instantiate-Resource (resource-type resource-name owning-component))
@@ -1234,13 +1241,13 @@
        (tell `[resource ,owning-component ,resource-name ,resource])
        (tell `[uses-resource ,owning-component ,resource])
        ;; process possile-modes
-       ,@(loop for mode in modes 
+       ,@(loop for mode in modes
 	     collect `(tell `[possible-model ,resource ,',mode]))
        ;; process prior probabilities of the modes
-       ,@(loop for (mode prior-probability) in prior-probabilities 
+       ,@(loop for (mode prior-probability) in prior-probabilities
 	     collect `(tell `[a-priori-probability-of ,resource ,',mode ,',prior-probability]))
        ;; now do the vulnerability mapping
-       ,@(loop for vulnerability in vulnerabilities 
+       ,@(loop for vulnerability in vulnerabilities
 	     collect `(tell `[has-vulnerability ,resource ,',vulnerability]))
        resource)))
 
@@ -1280,7 +1287,7 @@
 	  [component ?producer ? ?consumer]
           [port input ?producer ?producer-port-name]
 	  [port input ?consumer ?consumer-port-name]
-	  [input ?producer-port-name ?producer ?value]]  
+	  [input ?producer-port-name ?producer ?value]]
   then [input ?consumer-port-name ?consumer ?value])
 
 (defrule out-out-dataflow (:forward)
@@ -1289,7 +1296,7 @@
 	  [component ?consumer ? ?producer]
           [port output ?producer ?producer-port-name]
 	  [port output ?consumer ?consumer-port-name]
-	  [output ?producer-port-name ?producer ?value]]  
+	  [output ?producer-port-name ?producer ?value]]
   then [output ?consumer-port-name ?consumer ?value])
 
 (defrule normal-controlflow (:forward)
@@ -1328,7 +1335,7 @@
 			  (ask [execution-status ?component completed]
 			       #'(lambda (just3)
 				   (declare (ignore just3))
-				   (setq running-components 
+				   (setq running-components
 				     (delete ?component running-components))
 				   (return-from block3 t))))
 			(return-from block2 t))))))
@@ -1339,11 +1346,11 @@
     (declare (ignore ready))
     (most-specific-component running)))
 
-Fix ME? Is it OK to use delete below since c-set is passed in?
+;;; Fix ME? Is it OK to use delete below since c-set is passed in?
 (defun most-specific-component (c-set)
     (labels ((kill-his-parents (c)
 	       (let ((his-parent (parent c)))
-		 (when his-parent 
+		 (when his-parent
 		   (Setq c-set (delete his-parent c-set))
 		   (kill-his-parents his-parent)))))
       (loop for c in c-set
@@ -1355,7 +1362,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 (defvar *suppress-event-processing* nil)
 
 ;;; Fix me:  This allows the same event to trigger several different things
-;;; is that really the intent?  Or is the idea that the event is uniquely 
+;;; is that really the intent?  Or is the idea that the event is uniquely
 ;;; associated with one thing?
 (defmethod notice-event (event-name event-type universal-time thread args)
   (declare (ignore thread universal-time))
@@ -1398,7 +1405,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 				       when name
 				       do (tell `[output ,name ,component ,value])
 					  (tell `[data-type-of ,value ,(type-of value)])
-					  ))))))) 
+					  )))))))
 	;; An initiation event for something ready.  Recompute ready
 	;; and running because doing one of the above things may have
 	;; caused the status of something to change consider the case
@@ -1416,7 +1423,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 				       for value in args
 				       when name
 				       do (tell `[input ,name ,component ,value])
-					  (tell `[data-type-of ,value ,(type-of value)]))))			
+					  (tell `[data-type-of ,value ,(type-of value)]))))
 			  (tell `[execution-status ,component started])
 			  (tell `[selected-model ,component normal]
 				:justification :assumption)
@@ -1431,7 +1438,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		     (do-this-guys-inputs ?component))))
 	  (loop for component in ready
 	      do (do-this-guys-inputs component)))
-	    
+
 	;; Otherwise it shouldn't have happened.
 	(unless found-a-use
 	  (let ((allowable-assertions (loop with assertions = nil
@@ -1473,7 +1480,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
        )))
 
 (defun apply-attack-model (name component)
-  (funcall name component)) 
+  (funcall name component))
 
 ;;;; building the equivalent ideal model
 
@@ -1516,7 +1523,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 			  (or (typep ?node 'split-object)
 			      (typep ?node 'join-object)
 			      (typep ?node 'primitive-branch-mixin)))
-	       (multiple-value-bind (new-diagram ideal-node) 
+	       (multiple-value-bind (new-diagram ideal-node)
 		   (ideal:add-node ideal-diagram
 				   ;; if the node type is attack, the thing that
 				   ;; matches ?node is the attack name
@@ -1528,7 +1535,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		 (setq ideal-diagram new-diagram)
 		 (case node-type
 		   (component
-		    (setq ideal-diagram (build-corresponding-component-nodes 
+		    (setq ideal-diagram (build-corresponding-component-nodes
 					 qualified-name ideal-node states ideal-diagram)))
 		;; (resource
 		;; (setq ideal-diagram (build-corresponding-resource-nodes
@@ -1543,7 +1550,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 (defun build-corresponding-component-nodes (parent-node-name parent-node states ideal-diagram)
   (loop for state in states
         for new-name = (make-name parent-node-name state)
-        do (multiple-value-bind (new-diagram child-node) 
+        do (multiple-value-bind (new-diagram child-node)
 			        (ideal:add-node ideal-diagram
 					        :name new-name
 					        :type :chance
@@ -1565,7 +1572,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
                              (if true-case 1 0))
                        (setf (ideal:prob-of child-case parent-case)
                              (if true-case 0 1)))))))))
-  ideal-diagram) 
+  ideal-diagram)
 
 (defun build-corresponding-resource-nodes (original-node-name original-node states ideal-diagram)
   (let ((new-nodes nil) (n-nodes 0))
@@ -1585,7 +1592,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
     ;; Set the conditional probabilities on the new evidence node
     (ideal:for-all-cond-cases (new-case new-nodes)
       (let* ((number-true (loop for case on new-case
-                                count (eql (ideal:state-in case) 
+                                count (eql (ideal:state-in case)
                                            (ideal:get-state-label (ideal:node-in case) :true))))
              (how-much (if (zerop number-true) (/ 1 (float n-nodes)) (/ 1 (float number-true)))))
         (ideal:for-all-cond-cases (original-case original-node)
@@ -1606,14 +1613,14 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
             (format t "~%Setting ~a ~a <- ~{~a ~a~^ ~} to ~a"
                     (ideal:node-name (ideal:node-in original-case))
                     (ideal:label-name (ideal:state-in original-case))
-                    (loop for case on new-case 
+                    (loop for case on new-case
                           collect (ideal:node-name (ideal:node-in case))
                           collect (ideal:label-name (ideal:state-in case)))
                     value-to-set-this-time)
             ))))
     ideal-diagram))
 
-;;; question: 
+;;; question:
 ;;; Used to be (if (symbolp ?resource) ?resource (object-name ?resource)) instead of just ?resource-name
 ;;; why was that?
 ;;; Ideal insists that node names be symbols.
@@ -1657,9 +1664,9 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		  (resource-nodes nil)
 		  (component-node (ideal:find-node (qualified-name ?component) ideal-diagram))
 		  (component-label (ideal:get-state-label component-node ?c-model)))
-	     ;; The dependency list is a list of pairs (conses) of a resource object and a mode name for 
+	     ;; The dependency list is a list of pairs (conses) of a resource object and a mode name for
 	     ;; that object.
-	     (loop for (resource . resource-mode) in ?dependency-list 
+	     (loop for (resource . resource-mode) in ?dependency-list
 		 for resource-name =  (qualified-name resource)
 		 do (push (ideal:find-node resource-name ideal-diagram) resource-nodes)
 		 collect resource-name into resource-names
@@ -1679,13 +1686,13 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
   ;; first add arcs
   (flet ((print-an-assignment (type resource resource-model-name attack-case prob)
            (when *report-out-loud*
-             (format t "~%Setting ~a prob of ~a ~a <- ~{~a ~a~^, ~} to ~5,4f" 
+             (format t "~%Setting ~a prob of ~a ~a <- ~{~a ~a~^, ~} to ~5,4f"
                      type
                      resource resource-model-name
                      (loop for a on attack-case
                            for a-name = (ideal:node-name (ideal:node-in a))
                            for s-name = (ideal:label-name (ideal:state-in a))
-                           collect a-name collect s-name) 
+                           collect a-name collect s-name)
                      prob))))
     (ask `[resource ,component ? ?resource]
          #'(lambda (stuff)
@@ -1695,7 +1702,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
                    (attack-nodes nil))
                (flet ((add-attack-entry (attack-case prob)
                         (let ((entry (assoc attack-case cond-case-alist :test #'equal)))
-                          (unless entry 
+                          (unless entry
                             (setq entry (list (copy-tree attack-case) 0))
                             (push entry cond-case-alist))
                           (incf (second entry) prob))))
@@ -1719,7 +1726,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
                                    for state = (ideal:state-in attack)
                                    for state-name = (ideal:label-name state)
                                    when (eql state-name :true)
-                                   do 
+                                   do
                                    (ask `[attack-implies-compromised-mode ,attack-name ?resource ,resource-model-name ?probability]
                                         #'(lambda (just)
                                             (declare (ignore just))
@@ -1754,9 +1761,9 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 
 
 
-#+genera (import (mapcar #'(lambda (symbol) (intern (string-upcase symbol) 'clos)) 
+#+genera (import (mapcar #'(lambda (symbol) (intern (string-upcase symbol) 'clos))
                          (list "defclass" "defmethod" "with-slots" "setf" "make-instance")))
-                 
+
 
 (defclass search-control ()
   ((component-name :initarg :component-name :accessor component-name)
@@ -1777,14 +1784,14 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
    (initialize-resources-and-components sc)
    (format t "~%The Bayesian solver was called ~d times" (bayes-calls sc))
    (format t "~%There are ~d diagnoses" (length (solution-states sc)))
-   (format t "~%There are ~d nogoods" (length (nogoods sc)))   
+   (format t "~%There are ~d nogoods" (length (nogoods sc)))
    (ideal:diag-display-beliefs (resource-nodes sc))
    (ideal:diag-display-beliefs (component-nodes sc))
    (ideal:diag-display-beliefs (attack-nodes sc))
    (when show-solutions
-   (loop for (prob . assertions) in (solution-states sc) 
-         do (format t "~%~5,4f ~:{[~a ~a]~^~}" prob 
-                    (loop for a in assertions collect 
+   (loop for (prob . assertions) in (solution-states sc)
+         do (format t "~%~5,4f ~:{[~a ~a]~^~}" prob
+                    (loop for a in assertions collect
                           (with-statement-destructured (component model) a (list component model)))))))
 
 (defmethod add-node-to-diagram ((sc search-control) new-node new-diagram)
@@ -1814,7 +1821,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
       (let ((all-components nil))
 	;; give each possible assumption a unique bit
 	(let ((current-bit-position 1))
-	  (ask `[and [component ,component ?sub-component-name ?sub-component] 
+	  (ask `[and [component ,component ?sub-component-name ?sub-component]
 		     ;; Note that we only assign bits to things that
 		     ;; were actually involved in the computation
 		     ;; I.e. that actually have already started
@@ -1822,7 +1829,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		     [possible-model ?sub-component ?y]]
 	       #'(lambda (just)
 		   (declare (ignore just))
-		   (pushnew ?sub-component all-components) 
+		   (pushnew ?sub-component all-components)
 		   (let ((assertion (tell [selected-model ?sub-component ?y] :justification :none)))
 		     (setf (bit-pattern assertion) current-bit-position)
 		     (setq current-bit-position (* current-bit-position 2))
@@ -1830,7 +1837,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		     ))))
 	(labels ((do-one (remaining-components partial-state)
 		   (if (null remaining-components)
-		       (let ((bit-vector (bit-vector-from-assertion-set partial-state)))	
+		       (let ((bit-vector (bit-vector-from-assertion-set partial-state)))
 			 (push (cons bit-vector partial-state) remaining-states))
 		     (destructuring-bind (first-component . rest-components) remaining-components
 		       (ask `[possible-model ,first-component ?model]
@@ -1847,8 +1854,8 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
     (ideal-node-from-assertion sc conseqeuent)))
 
 (defmethod ideal-node-from-assertion ((sc search-control) assertion)
-  (with-statement-destructured (component model) assertion 
-    (ideal:find-node (make-name (qualified-name component) model) (ideal-diagram sc)))) 
+  (with-statement-destructured (component model) assertion
+    (ideal:find-node (make-name (qualified-name component) model) (ideal-diagram sc))))
 
 (defmethod belief-of-component-model ((sc search-control) component model)
   (let* ((node (ideal:find-node (qualified-name component) (ideal-diagram sc)))
@@ -1882,7 +1889,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		  for node = (ideal-node-from-assertion sc assertion)
 		  unless (member assertion nogood)
 		    do (setf (ideal:node-state node) (ideal:get-state-label node :true))
-		       (push node nodes))        
+		       (push node nodes))
 	    ;; also pin all the nodes corresponding to negated selected model assertions as false
 	    (loop for (nil . assertions) in negations
 		  do (loop for assertion in assertions
@@ -1903,12 +1910,12 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 			  (return (list least-likely-assumption))))))))
 
 (defun nogood-from-condition (condition)
-  (declare (values assertions assumptions))
+  #-sbcl(declare (values assertions assumptions))
   (let ((assumptions (tms-contradiction-non-premises condition)))
     (let ((real-assumptions nil)
 	  (real-assertions nil))
       (loop for clause in assumptions
-	  for assertion = (multiple-value-bind (mnemonic assertion) 
+	  for assertion = (multiple-value-bind (mnemonic assertion)
 			      (destructure-justification clause)
 			    (declare (ignore mnemonic))
 			    assertion)
@@ -1919,13 +1926,13 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 	    real-assumptions))))
 
 (defun bit-vector-from-assertion-set (assertions)
-  (loop with answer = 0 
+  (loop with answer = 0
 	for assertion in assertions
 	do (setq answer (logior answer (bit-pattern assertion)))
 	finally (return answer)))
 
 (defun bit-vector-subset (v1 v2) (eql v2 (logior v1 v2)))
-(defun bit-vector-superset (v1 v2) (eql v1 (logior v1 v2))) 
+(defun bit-vector-superset (v1 v2) (eql v1 (logior v1 v2)))
 
 (defmethod add-new-nogood ((sc search-control) nogood)
   (with-slots (nogoods remaining-states solution-states) sc
@@ -1944,13 +1951,13 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
             (unless (and (null remaining-states) (null solution-states))
               (update-ideal-with-nogood sc nogood))
 	    (when (null remaining-states)
-              (loop for thing in nogood do (unjustify thing))         
+              (loop for thing in nogood do (unjustify thing))
               (throw 'no-remaining-states (values)))
 	    (values t nogoods))))))
 
 (defmethod update-ideal-with-nogood ((sc search-control) nogood)
   (let ((nodes (loop for assertion in nogood
-		   when (relevant? assertion) 
+		   when (relevant? assertion)
 		   collect (ideal-node-from-assertion sc assertion))))
     ;; build a new node representing the nogood
     (let* ((new-node (add-and-node sc nodes "CONTRDICTION-"))
@@ -1991,7 +1998,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
       ;; make the conditional probability matrix be "Boolean AND"
       (ideal:for-all-cond-cases (child-states nodes)
         (let ((all-true (loop for case on child-states
-                              always (eql (ideal:state-in case) 
+                              always (eql (ideal:state-in case)
                                           (ideal:get-state-label (ideal:node-in case) :true)))))
           (ideal:for-all-cond-cases (parent-case new-node)
             (if (eql (ideal:state-in parent-case) true-case)
@@ -2007,11 +2014,11 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
                 (setf (ideal:prob-of parent-case child-states) 0)
                 ;; at least one child false
                 (setf (ideal:prob-of parent-case child-states) 1)))))))
-    new-node)) 
+    new-node))
 
 (defmethod find-solutions ((search-control search-control) &optional (do-all-solutions t))
   (handler-bind
-      ((ltms:ltms-contradiction 
+      ((ltms:ltms-contradiction
 	#'(lambda (condition)
 	    (let ((clauses-to-retract (handle-nogood search-control condition)))
 	      (multiple-value-bind (mnemonic assertion)
@@ -2020,7 +2027,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
 		(when *report-out-loud*
 		  (with-statement-destructured (component model) assertion
 		    (format t "~%Retracting Model ~a for ~a" model component))))
-	      (invoke-restart 
+	      (invoke-restart
 	       :unjustify-subset clauses-to-retract)))))
     (catch 'no-remaining-states
       ;; commented out the search for the best solution
@@ -2029,7 +2036,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
       ;; finally (capture-solution search-control))
       ;; now enumerate remaining-states for exhaustive coverage
       (handler-bind
-	  ((ltms:ltms-contradiction 
+	  ((ltms:ltms-contradiction
 	    #'(lambda (condition)
 		(let ((clauses-to-retract (handle-nogood search-control condition :stupid t)))
 		  (invoke-restart
@@ -2044,8 +2051,8 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
   search-control)
 
 (defun set-up-search-control (component-name component attack-models)
-  (when attack-models 
-    (loop for attack-model in attack-models 
+  (when attack-models
+    (loop for attack-model in attack-models
 	do (apply-attack-model attack-model component)))
   (let* ((ideal-model (build-ideal-model component))
 	 (search-control (make-instance 'search-control
@@ -2252,7 +2259,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
     (let ((state-to-try (cdr (first remaining-states))))
       ;; (format t "~%Next state ~d states left" (length remaining-states))
       (format t "~%Trying state ~{~a~^, ~}" state-to-try)
-      (loop with assertions-made = nil 
+      (loop with assertions-made = nil
 	  for assertion in state-to-try
 	  for interned-assertion = (tell assertion :justification :none)
 	  do (push interned-assertion assertions-made)
@@ -2283,7 +2290,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
     (next-level component)))
 
 (defmethod capture-solution ((sc search-control))
-  (with-slots (solution-states remaining-states component) sc 
+  (with-slots (solution-states remaining-states component) sc
     (let ((solution nil))
       (flet ((check-a-component (this-component)
 	       (unless (eql this-component component)
@@ -2305,7 +2312,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
     (let ((nodes-affected (update-ideal-for-selection-map sc selection-alist negations)))
       (let ((best-probability 0) (best-component nil) (best-model nil))
         (loop for component in components
-              unless (assoc component selection-alist) 
+              unless (assoc component selection-alist)
               do (ask `[possible-model ,component ?model]
                       #'(lambda (just)
                           (let* ((node (ideal-node-from-assertion sc (ask-database-predication just)))
@@ -2352,7 +2359,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
                    do (setf (ideal:node-state node) (ideal:get-state-label node :false))
                        (push node nodes)))
     (compute-probabilities sc)
-    (values nodes))) 
+    (values nodes)))
 
 (defmethod remove-all-component-evidence ((sc search-control))
   (let ((nodes nil))
@@ -2370,7 +2377,7 @@ Fix ME? Is it OK to use delete below since c-set is passed in?
        #'(lambda (just)
            (declare (ignore just))
            (return-from component-uses-resource (values ?resource))))
-  nil) 
+  nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
