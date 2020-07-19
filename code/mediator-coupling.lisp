@@ -254,7 +254,10 @@
        :label "Situation Display"
        :scroll-bars t
        :width 400 :height 300 :left 200 :top 100)))
-  (clim:window-expose *presentation-window*))
+  #-mcclim
+  (clim:window-expose *presentation-window*)
+  #+mcclim
+  (clim:enable-frame *presentation-window*))
 
 (defun close-presentation-window ()
   (clim:destroy-frame (clim:pane-frame *presentation-window*))
@@ -262,7 +265,10 @@
 
 (defun show-situation-display ()
   (get-presentation-window)
+  #-mcclim
   (clim:window-stack-on-top *presentation-window*)
+  #+mcclim
+  (clim:Raise-sheet *presentation-window*)
   (labels
       ((get-children (ensemble)
 	 (let ((stuff nil))

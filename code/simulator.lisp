@@ -857,7 +857,7 @@
 
 (defvar *top-level-components* nil)
 
-(defmethod build-interface :around (module-type role-name &optional the-parent)
+(defmethod build-interface :around (module-type (role-name symbol) &optional the-parent)
   (declare (ignore module-type role-name))
   (let ((the-component (call-next-method)))
     (setf (parent the-component) the-parent)
@@ -870,7 +870,7 @@
       (tell `[all-controlflows-satisfied ,the-component])
       ;; so now whenever all its inputs are there it will be marked ready
       )
-    ;; I'm sure I don't remember why this is here
+    ;; I'm sure I don't remember why this is here1
     (when (and (null the-parent)
 	       (all-inputs-are-present the-component)
 	       (all-controlflows-are-there the-component))

@@ -25,7 +25,7 @@
   (push self (gethash  (class-of self) *clearable-facts-hashtable*)))
 
 (define-predicate-method (untell separately-clearable-facts-mixin :after) ()
-  (declare (ignore pred))
+  ;; (declare (ignore pred))
   (setf (gethash (class-of self) *clearable-facts-hashtable*)
     (delete self (gethash (class-of self) *clearable-facts-hashtable*)))
   self)
@@ -38,7 +38,9 @@
 		 (unless (member sub classes-done)
 		   (push sub classes-done)
 		   (mapc #'untell (gethash sub *clearable-facts-hashtable*))
-		   (mapc #'do-one (aclmop:class-direct-subclasses sub)))))
+		   (mapc #'do-one #+allegro (aclmop:class-direct-subclasses sub)
+                                  #+sbcl (sb-mop:class-direct-subclasses sub)
+                                  ))))
 	(when class
 	  (do-one class))))))
 
@@ -104,7 +106,7 @@
 ; ;; and its resources
 ; (defmacro define-method (method-name &key service features goal
 ; 					  components
-; 					  resources resource-constraints 
+; 					  resources resource-constraints
 ; 					  context other-parameters
 ; 					  sub-services
 ; 					  plan prerequisite)
@@ -128,8 +130,8 @@
 ;        )))
 
 
-(define-predicate method-for (service 
-			      goal 
+(define-predicate method-for (service
+			      goal
 			      feature-alist ;; used as in/out
 			      current-resource-alist ;; the accumulated use of resources when I'm called.  An in parameter.
 			      current-resource-cost ;; similar for resource cost
@@ -139,17 +141,17 @@
 			      updated-resource-probability ;; similar
 			      cutoff-function ;; If non-nil, the guy to call to see if you should keep building this plan.
 			      plan ;; A keyword list structure representing the plan
-			      top-method ;; the top-level method 
+			      top-method ;; the top-level method
 			      ))
 
-(defmacro define-method (method-name 
-			 &key service 
-			      goal 
+(defmacro define-method (method-name
+			 &key service
+			      goal
 			      features
-			      context 
+			      context
 			      prerequisite
-			      resources 
-			      resource-constraints 
+			      resources
+			      resource-constraints
 			      resource-costs
 			      components
 			      sub-services
@@ -172,7 +174,7 @@
 	  collect `(list ',key ,quoted-value)))
     `(progn
        (defrule ,method-name (:backward)
-	 then [method-for ,service ,goal ,features 
+	 then [method-for ,service ,goal ,features
 			  ?current-resource-alist ?current-resource-cost ?current-resource-probability
 			  ?updated-resource-alist ?updated-resource-cost ?updated-resource-probability
 			  ?cutoff-function ?plan ?top-method]
@@ -180,7 +182,7 @@
 		 (multiple-value-bind (resource-alist-so-far resource-cost resource-probability)
 		     (update-resource-costs ,resource-cost-alist ',components
 					    ?current-resource-alist ?current-resource-cost ?current-resource-probability)
-		   (when (or (null ?cutoff-function) 
+		   (when (or (null ?cutoff-function)
 			     (null (funcall ?cutoff-function ?top-method
 					    resource-cost resource-probability resource-alist-so-far)))
 		     (when (unbound-logic-variable-p ?top-method) (unify ?top-method ',method-name))
@@ -203,7 +205,7 @@
 			 for next-resource-cost = (if last? '(logic-variable-maker \?updated-resource-cost) (lv-maker 'resource-cost next))
 			 for next-resource-probability = (if last? '(logic-variable-maker \?updated-resource-probability)
 							   (lv-maker 'resource-probability next))
-			 collect `(predication-maker 
+			 collect `(predication-maker
 				   '(method-for ,sub-service ,goal ,(make-source-alist-for-service sub-service alist)
 				     ,current-resource-alist ,current-resource-cost ,current-resource-probability
 				     ,next-resource-alist ,next-resource-cost ,next-resource-probability
@@ -249,7 +251,7 @@
 
 (defun resources-available ()
   (let ((alist nil))
-    (ask [resource-available ?resource ?amount]	 
+    (ask [resource-available ?resource ?amount]
 	 #'(lambda (ignore)
 	     (declare (ignore ignore))
 	     (push (list ?resource ?amount) alist)))
@@ -302,7 +304,7 @@
 
 (defmacro trace-utility-calc (format-string &rest args)
   `(when *trace-utility-calc*
-     (format *trace-utility-calc* 
+     (format *trace-utility-calc*
 	     ,format-string ,@args)))
 
 (defun utility-trace (&optional (on-or-off 'on))
@@ -340,15 +342,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Find Best Method for Service
-;;; 
+;;;
 ;;; This finds the best method taking into account:
 ;;;  The benefit delivered
 ;;;  The cost of the resources
 ;;;  Limits on the amounts of specific resources that can be used
 ;;;  The possiblity that some resource isn't working and could cause the method to fail
-;;; 
-;;; The utility-function is supposed to be the type that returns max min bounds 
-;;; this is always applied to the the top-level parameter alist 
+;;;
+;;; The utility-function is supposed to be the type that returns max min bounds
+;;; this is always applied to the the top-level parameter alist
 ;;;  since this is the value of the whole solution
 ;;;
 ;;; This builds a cutoff continuation that is used to cut-off a sub-tree exploration
@@ -356,14 +358,14 @@
 ;;;  If it's clearly worse than the best solution so far
 ;;;  this is equivalent to its max utility - resource cost incurred so far is worse than the best
 ;;;   conditioned by the probability of failure and failure cost for the top-level method
-;;; 
+;;;
 ;;; It also builds a continuation for when a total solution is reached
 ;;;  this captures the best solution so far
 ;;;
 ;;; The main recursion is a couple of functions below
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun find-best-method-for-service (service-name utility-function 
+(defun find-best-method-for-service (service-name utility-function
 				     &key feature-requirements resource-budget-alist goal do-cutoffs?)
   (let ((best-value nil) (best-method nil) (best-raw-utility nil) (best-expected-utility nil)
 	(alist (make-alist-for-service service-name feature-requirements))
@@ -378,7 +380,7 @@
 	       ;; also checks that you haven't exceeded resource budgets
 	       (incf number-of-cutoff-checks)
 	       (cond
-		((exceeds-resource-limit resource-consumption-alist) 
+		((exceeds-resource-limit resource-consumption-alist)
 		 (incf number-of-resource-cutoffs)
 		 (trace-utility-calc "~%Cutting off for excessive resources: ~\
                                         ~10t~{~a~^,~}~\
@@ -389,9 +391,9 @@
 		((null best-value) nil)
 		(t (multiple-value-bind (his-best-possible no-good)
 		       (expected-net-benefit top-method total-resource-cost joint-probability
-					     alist utility-function 
+					     alist utility-function
 					     (when do-cutoffs? best-value)
-					     no-goods)		     
+					     no-goods)
 		     (cond
 		      (his-best-possible
 		       ;; he didn't get cutoff, return nil for no cutoff
@@ -421,9 +423,9 @@
 	       (declare (ignore backward-support))
 	       (incf number-considered)
 	       (multiple-value-bind (tradeoff no-good raw-utility expected-utility)
-		   (expected-net-benefit ?top-method 
+		   (expected-net-benefit ?top-method
 					 ?final-resource-cost ?final-resource-probability alist
-					 utility-function 
+					 utility-function
 					 (when do-cutoffs? best-value) no-goods)
 		 (let ((final-plan (copy-object-if-necessary ?plan)))
 		   (when tradeoff (push (list tradeoff final-plan raw-utility expected-utility) all-methods))
@@ -440,15 +442,15 @@
 		    ((and best-value (= tradeoff best-value))
 		     (push final-plan best-method)))))
 	       ))
-      (values best-method 
-	      best-value 
-	      best-raw-utility 
+      (values best-method
+	      best-value
+	      best-raw-utility
 	      best-expected-utility
 	      (collapsed-score-list all-methods)
-	      number-considered 
+	      number-considered
 	      number-of-cutoff-checks
-	      number-of-utility-cutoffs 
-	      number-of-resource-cutoffs 
+	      number-of-utility-cutoffs
+	      number-of-resource-cutoffs
 	      no-goods
 	      ))))
 
@@ -462,14 +464,14 @@
 	unless (member stuff (third entry) :test #'equal)
 	do (push stuff (third entry)) (incf (second entry)))
     (sort alist #'> :key #'first)))
-  
+
 (defun make-alist-for-service (service-name feature-requirements)
   (if (unbound-logic-variable-p feature-requirements)
       feature-requirements
     (let* ((features (get-service-features service-name)))
       (loop for feature in features
 	  for requirement = (assoc feature feature-requirements)
-	  if requirement 
+	  if requirement
 	  collect requirement
 	  else collect (list feature (ji:make-unbound-logic-variable feature))))))
 
@@ -479,7 +481,7 @@
 ;;; expected-utility is the utility weighted by the probability that all the resources work
 ;;; your pay for the resources in all cases so it's not weighted by probability
 
-(defun expected-net-benefit (method resource-cost joint-resource-probability alist utility-function 
+(defun expected-net-benefit (method resource-cost joint-resource-probability alist utility-function
 			     &optional current-best-value
 				       nogoods)
   (let ((expected-failure-cost (* (- 1 joint-resource-probability) (cost-of-failure method))))
@@ -506,14 +508,14 @@
 				    (do-cutoffs? nil))
   (declare (ignore request-name))
   (let ((utility-function
-	 (utility-function-for-service 
+	 (utility-function-for-service
 	  service-name
 	  preferences
 	  (or max-utility
 	      (loop for (resource-name resource-limit) in resource-limits
 		  sum (aggregate-cost resource-name resource-limit))))))
     (find-best-method-for-service
-     service-name 
+     service-name
      utility-function
      :goal goal
      :feature-requirements hard-constraints
@@ -528,7 +530,7 @@
 ;;;   fetchings the resources
 ;;;   binding the top-level parameters in alis
 ;;;   and fetching the service requirements (sub-goals)
-;;; It then checks whether this solution can be ignored 
+;;; It then checks whether this solution can be ignored
 ;;;   the idea is that the utility function is a bounds function which will return a max utility
 ;;;   over all unbound service-parameters
 ;;;   and we can then calculate an expected-net-benefit on that
@@ -545,7 +547,7 @@
 ;;; The cutoff function is called with the method name, resource-cost, joint-probability
 ;;;  it has access to the utility function and the alist as captured closure variables
 ;;;  so it does little more than compute expected-net-benefit and threshold on that
-;;; 
+;;;
 ;;; The continuation is called once for each solution with:
 ;;;   the cost-of-all-resources used by that method
 ;;;   the joint probability that the resources all work
@@ -558,7 +560,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (defun find-methods-for-service (service-name goal alist other-parameters
-; 				 continuation 
+; 				 continuation
 ; 				 cutoff-function
 ; 				 resource-cost-so-far
 ; 				 resource-probability-so-far
@@ -570,7 +572,7 @@
 ;       (setq  other-parameters (ji:make-unbound-logic-variable 'parameters)))
 ;     (unless goal
 ;       (setq  goal (ji:make-unbound-logic-variable 'goal)))
-;     (ask `[method-for ,service-name ,goal ,alist ?my-method ?my-resources ?my-components ,other-parameters ?sub-services] 
+;     (ask `[method-for ,service-name ,goal ,alist ?my-method ?my-resources ?my-components ,other-parameters ?sub-services]
 ; 	 #'(lambda (bs)
 ; 	     (declare (ignore bs))
 ; 	     (trace-utility-calc "~2%Trying method ~a for ~a" ?my-method service-name)
@@ -590,7 +592,7 @@
 ; 			    for entry = (assoc category resource-alist-so-far)
 ; 			    for cost = (aggregate-cost category amount)
 ; 			    do (incf cummumlative-resource-cost cost)
-; 			    if entry 
+; 			    if entry
 ; 			    do (incf (second entry) amount)
 ; 			    else do (push (list category amount) resource-alist-so-far)))
 ; 		 (loop for component in ?my-components
@@ -610,7 +612,7 @@
 ; 			    (copy-object-if-necessary ?sub-services)))
 ; 		  ((null ?sub-services)
 ; 		   ;; if there are no sub-services, we're done, call our continuation
-; 		   (funcall continuation 
+; 		   (funcall continuation
 ; 			    cummumlative-resource-cost cummulative-resource-probability resource-alist-so-far
 ; 			    (copy-object-if-necessary ?my-method)
 ; 			    (copy-object-if-necessary ?my-resources)
@@ -618,7 +620,7 @@
 ; 		  ;; there are sub-services, start the iteration to find solutions for those
 ; 		  ;; as long as we aren't already cutoff
 ; 		  (t
-; 		   (labels 
+; 		   (labels
 ; 		       ((do-next-subservice (cost-so-far probability-so-far resource-alist-so-far
 ; 					     sub-services-left sub-services-done top-method)
 ; 			  (destructuring-bind  (sub-service-name sub-service-goal his-alist other-params &rest constraints)
@@ -634,7 +636,7 @@
 ; 				 (mapc #'eval constraints)
 ; 				 (if (null sub-services-left)
 ; 				     ;; no more sub-goals, pass back the answer
-; 				     (funcall continuation 
+; 				     (funcall continuation
 ; 					      his-resource-cost his-probability his-resource-alist
 ; 					      his-method-name his-resources sub-services-done)
 ; 				   ;; more sub-goals to satisfy
@@ -662,14 +664,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; This is going to be a very large relationship because it's going to be used to pass along the cummulative
-;;; resource consumption going down and then to pass it back up.  To be specific as we do down a sub-goal we pass it 
+;;; resource consumption going down and then to pass it back up.  To be specific as we do down a sub-goal we pass it
 ;;; the resource consumption so far.  It solves the subgoal and returns the resource consumption for it and all its subgoals.
 ;;; We then pass this cummulative value to our next subgoal, etc.  So there's and in and out value for each of these.
 
 ;;; Possible modifications: Instead of returning resources, other parameters, components, sub-services
 ;;; return a single plan structure embodying all of those.
 
-;;; In  a top level call: 
+;;; In  a top level call:
 ;;;   the cummulative resource alist is nil
 ;;;   the cummulative resource cost is 0
 ;;;   the cummulative resource probability is 1
@@ -690,7 +692,7 @@
 	     for entry = (assoc category resource-alist-so-far)
 	     for cost = (aggregate-cost category amount)
 	     do (incf cummulative-resource-cost cost)
-	     if entry 
+	     if entry
 	     do (incf (second entry) amount)
 	     else do (push (list category amount) resource-alist-so-far)))
   (loop for component in my-components
@@ -699,7 +701,7 @@
       do (return-from update-resource-costs (values))
       else do (setq cummulative-resource-probability (* cummulative-resource-probability probability)))
   (trace-utility-calc "~%Resources ~a~% Resource consumption ~{~a~^,~}~% Resource cost ~a ~% Resource Reliability ~a"
-		      my-resources resource-alist-so-far 
+		      my-resources resource-alist-so-far
 		      cummulative-resource-cost
 		      cummulative-resource-probability)
   (values resource-alist-so-far
@@ -720,7 +722,7 @@
       (loop for feature in features
 	  for index from 1
 	  for requirement = (assoc feature partial-alist)
-	  if requirement 
+	  if requirement
 	  collect requirement
 	  else collect (list feature (lv-maker "ANONYMOUS" *anonymous-counter*))))))
 
@@ -736,7 +738,7 @@
 	 (sub-plans (rest sub-plan))
 	 )
     (unless (eql combination :atomic)
-      (format stream 
+      (format stream
 	      "~%~vtName: ~a~%~vtResources: ~a~%~vtComponents: ~a~%~vtCost: ~d"
 	      indent-level name
 	      indent-level resources
@@ -776,7 +778,7 @@
 		       do (do-sub-plan plan)))))))
       (do-sub-plan plan))
     (nreverse actions)))
-  
+
 
 
 
@@ -784,20 +786,20 @@
 #|
 
 (defrule method-name (:backward)
-  Then [new-method-for service [goal] canonical-feature-alist 
+  Then [new-method-for service [goal] canonical-feature-alist
 		       ?current-resource-alist ?current-resource-cost ?current-resource-probability
 		       ?updated-resource-alist ?updated-resource-probability ?updated-resource-cost
 		       ?plan ?cutoff-function ?top-method]
   If [and
       ;; this gets our resource variables bound
-      <prerequisites> 
+      <prerequisites>
       <resource-constraints>
       (when (unbound-logic-variable-p ?top-method)
 	(unify ?top-method method-name))
       (multiple-value-bind (alist-so-far resource-cost resource-probability)
 	  (update-resource-costs (list resources) (list components)
 				 ?current-resource-alist ?current-resource-cost ?current-resource-probability)
-	(when (or (null ?cutoff-function) 
+	(when (or (null ?cutoff-function)
 		  (null (funcall ?cutoff-function ?top-method
 				 resource-cost resource-probability alist-so-far)))
 	  (unify ?resource-alist-1 alist-so-far)

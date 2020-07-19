@@ -32,10 +32,10 @@
                 for support-lv = `(logic-variable-maker ,(intern (format nil "?support-~d" counter)))
                 collect logic-variable into lvs
                 collect support-lv into support-lvs
-                append `((predication-maker '(earliest-arrival-time ,input ,component-variable ,logic-variable)) 
+                append `((predication-maker '(earliest-arrival-time ,input ,component-variable ,logic-variable))
 			 :support ,support-lv)
 		 into clauses
-		finally 
+		finally
 		  (return `(defrule ,min-rule-name (:forward)
 			     If (predication-maker
 				 '(and
@@ -58,10 +58,10 @@
                 append `((predication-maker '(latest-arrival-time ,input ,component-variable ,logic-variable))
                          :support ,support-lv)
                 into clauses
-		finally  
+		finally
 		  (return `(defrule ,max-rule-name (:forward)
 			     If (predication-maker
-				 '(and 
+				 '(and
 				   (predication-maker '(component ,ensemble-variable ,component-name ,component-variable))
 				   (predication-maker '(selected-model ,component-variable ,model-name))
 				   :support ,model-support
@@ -113,7 +113,7 @@
 		    append `((predication-maker
 			      '(earliest-arrival-time ,other-input ,component-variable ,logic-variable)) :support ,support-lv)
 		    into clauses
-		    finally  
+		    finally
 		      (return
 			`(defrule ,min-rule-name (:forward)
 			   If (predication-maker
@@ -121,7 +121,7 @@
 				 (predication-maker '(component ,ensemble-variable ,component-name ,component-variable))
 				 (predication-maker '(selected-model ,component-variable ,model-name))
 				 :support ,model-support
-				 (predication-maker '(earliest-production-time ,output ,component-variable ,output-lv)) 
+				 (predication-maker '(earliest-production-time ,output ,component-variable ,output-lv))
 				 :support ,output-support
 				 ,@clauses))
 			   then (compute-backward-min-delay ,output-lv (list ,@lvs) ,max ',input ,component-variable
@@ -136,7 +136,7 @@
 			  (component-variable `(logic-variable-maker ,(intern "?COMPONENT"))))
 		      `(defrule ,max-rule-name (:forward)
 			 If (predication-maker
-			     '(and 
+			     '(and
 			       (predication-maker '(component ,ensemble-variable ,component-name ,component-variable))
 			       (predication-maker '(selected-model ,component-variable ,model-name)) :support ,model-support
 			       (predication-maker '(latest-production-time ,output ,component-variable ,output-lv))
@@ -175,7 +175,7 @@
           [latest-production-time ?output ?component ?late]
           (> ?early ?late)
           ]
-  then [ltms:contradiction]) 
+  then [ltms:contradiction])
 
 (defrule dataflow-timing-1 (:forward)
   If [and [dataflow ?producer-port ?producer ?consumer-port ?consumer]
@@ -202,8 +202,8 @@
 ;;; needs fixing
 
 
-;;;(defun run-case (ensemble-name input-timings output-timings &key 
-;;;                               (do-all-solutions t) 
+;;;(defun run-case (ensemble-name input-timings output-timings &key
+;;;                               (do-all-solutions t)
 ;;;                               (attack-model nil)
 ;;;                               (report-while-constructing nil)
 ;;;                               (report-while-running nil))
@@ -211,7 +211,7 @@
 ;;;  (let ((*report-out-loud* report-while-constructing))
 ;;;    (let* ((search-control (set-up-search-control ensemble-name attack-model)))
 ;;;      (let ((*report-out-loud* report-while-running))
-;;;        (with-atomic-action 
+;;;        (with-atomic-action
 ;;;          (apply-inputs input-timings)
 ;;;          (apply-observations output-timings))
 ;;;        (find-solutions search-control do-all-solutions)))))
@@ -233,7 +233,7 @@
 ;;;;                       (declare (ignore just))
 ;;;;                       (push (list variable component ?early-time ?latest-time) answers))))
 ;;;;       (nreverse answers))))
-;;;; 
+;;;;
 
 (defun parse-observation (predication ensemble)
   (labels ((hack-a-primitive-statement (predication)
@@ -283,13 +283,13 @@
               :justification :premise)))
 
 (define-predicate-method (notice-truth-value-change potentially :before) (old-truth-value)
-  (when (eql old-truth-value *true*)
+  (when (eql old-truth-value +true+)
     ;; If I'm going out remove me as a justification for the current
     ;; real predication that I support
     (let* ((predication (second (predication-statement self))))
       (let ((old-guy (tell predication :justification :none)))
-	(when old-guy 
-	  (loop for just in (all-justifications old-guy) 
+	(when old-guy
+	  (loop for just in (all-justifications old-guy)
 		doing (multiple-value-bind (mnemonic) (destructure-justification just)
 			(when (eql mnemonic 'best-time-finder)
 			  (unjustify old-guy just)))))))))
@@ -307,7 +307,7 @@
         (block find-current
           (ask `[,type ,port ,component ?his-time]
                #'(lambda (justification)
-                   (setq old-best-time ?his-time 
+                   (setq old-best-time ?his-time
 			 old-best-guy (ask-database-predication justification))
 		   (return-from find-current (values)))))
 	(cond

@@ -13,8 +13,8 @@
 ;;;
 ;;; The forward-map: A hash-table mapping feature-name to a byte-specifier
 ;;; for that feature and the list of values in order
-;;; 
-;;; An inverse-map for mapping the numerical encoding to feature and value 
+;;;
+;;; An inverse-map for mapping the numerical encoding to feature and value
 ;;; the inverse-map is an set of triples
 ;;; byte-specifier feature-name feature-values
 ;;;
@@ -61,7 +61,7 @@
     (when outgoing-node
       (pushnew link (incoming-links outgoing-node))))
   link)
-      
+
 (defclass node-space ()
   ((forward-map :accessor forward-map :initarg :forward-map)
    (inverse-map :accessor inverse-map :initarg :inverse-map)
@@ -87,14 +87,14 @@
 	     (incf byte-position number-of-bits))
     (let* ((network-size (ash 1 byte-position))
 	   (node-vector (make-array network-size))
-	   (node-space (make-instance 'node-space 
+	   (node-space (make-instance 'node-space
 			 :features feature-set
 			 :forward-map forward-map
 			 :inverse-map inverse-map
 			 :node-vector node-vector)))
         (loop for i below network-size
-	    for entry = (make-instance 'netnode 
-			  :number i 
+	    for entry = (make-instance 'netnode
+			  :number i
 			  :node-space node-space)
 	    do (setf (aref node-vector i) entry))
 	node-space
@@ -138,7 +138,7 @@
 	  finally (return (aref node-vector key)))))
 
 (defmethod map-feature-name-and-value (feature-name feature-value (ns node-space))
-  (declare (values byte-specifier value-number))
+  #+(or allegro genera) (declare (values byte-specifier value-number))
   (with-slots (forward-map) ns
     (let ((feature-entry (or (gethash feature-name forward-map)
 			     (error "invalid feature-name ~a" feature-name))))
@@ -154,7 +154,7 @@
 ;;; and apply a function to each
 ;;; a description is a list of literals
 ;;; each literal is a list of feature-name and a specific-feature-value
-;;; 
+;;;
 ;;; variable features are the feature-names for which we don't care
 ;;; what value they take on, we find
 ;;; all nodes with any value for this feature-name
@@ -175,7 +175,7 @@
 	      (funcall continuation (aref node-vector key-so-far) accumulated-dont-cares))
 	     (t (destructuring-bind (next-feature-name . remaining-features) remaining-features
 		  (let ((feature-entry (or (gethash next-feature-name forward-map)
-					   (error "invalid feature-name ~a" 
+					   (error "invalid feature-name ~a"
 						  next-feature-name))))
 		    ;; since it can be any of the values we need to map over all of them
 		    (destructuring-bind (byte-specifier . feature-values) feature-entry
@@ -191,25 +191,25 @@
 ;;; this is used by canonicalize-rule below to combine the negative of the lhs of a rule
 ;;; with the rhs of the rule and vice-versa.
 ;;; by negative we mean all possible features other than the one
-;;; actually specified 
+;;; actually specified
 ;;; e.g. if the right hand side say (quality low)
-;;; then we need to add to the left hand side 
+;;; then we need to add to the left hand side
 ;;; (quality high) and (quality medium)
 
 ;;; so if we have (speed fast) > (quality low)
 ;;; where speed takes on values fast slow
 ;;; and quality takes on values high medium low
-;;; then what we mean is 
+;;; then what we mean is
 ;;; (speed fast) & (quality high) > (speed slow) & (quality low)
 ;;; (speed fast) & (quality medium) > (speed slow) & (quality low)
 
 (defmethod distribute (and-term and-term-to-negate (ns node-space))
   (with-slots (features) ns
     (let ((answers nil))
-      (labels 
+      (labels
 	  ((do-all-remaining-dont-cares (dont-care-terms stuff-so-far)
 	     (cond ((null dont-care-terms)
-		    (pushnew (sort (copy-list stuff-so-far) #'my-order) answers 
+		    (pushnew (sort (copy-list stuff-so-far) #'my-order) answers
 			     :test #'equal))
 		   (t (destructuring-bind (feature-name feature-value)
 			  (pop dont-care-terms)
@@ -219,11 +219,11 @@
 			    (loop for value in feature-values
 				unless (eql value feature-value)
 				do (let* ((new-term (list feature-name value))
-					  (accumulated-stuff (if (member new-term stuff-so-far 
+					  (accumulated-stuff (if (member new-term stuff-so-far
 									 :test #'equal)
 								 stuff-so-far
 							       (cons new-term stuff-so-far))))
-				     (do-all-remaining-dont-cares 
+				     (do-all-remaining-dont-cares
 					 dont-care-terms accumulated-stuff)))))))))
 	   (my-order (a b)
 	     (string-lessp (string (first a)) (string (first b)))))
@@ -296,8 +296,8 @@
     (labels ((do-one-node (node path-so-far)
 	       ;; (format t "~%do one node ~a ~a ~a" (decode-node node) path-so-far (node-value node))
 	       (when (member node path-so-far)
-		 (error "cycle ~{~%~a~^,~}" 
-			(loop for bad-node in (cons node path-so-far) 
+		 (error "cycle ~{~%~a~^,~}"
+			(loop for bad-node in (cons node path-so-far)
 			      collect (decode-node bad-node))))
                (unless (node-value node)
                  (let* ((outgoing-links (outgoing-links node))
@@ -336,7 +336,7 @@
 (defmethod utility-bounds (bound-features unbound-features (node-space node-space))
   (let ((min nil)
 	(max nil))
-    (find-feature-set-nodes 
+    (find-feature-set-nodes
      bound-features unbound-features node-space
      #'(lambda (node &rest ignore)
 	 (declare (ignore ignore))
@@ -354,7 +354,7 @@
 	(mask 0))
     ;; build a mask key which is all 1s in the features provided and zero elsewhere
     ;; and a vector which is just the features provided and zero elsewhere
-    ;; check that the feature is actually bound to a value.  
+    ;; check that the feature is actually bound to a value.
     (loop for (feature-name  feature-value) in feature-alist
 	unless (unbound-logic-variable-p feature-value)
 	do (multiple-value-bind (byte-specifier feature-value-number)
@@ -413,15 +413,15 @@
 (defun convert-surface-rules (constraints)
   (mapcar #'convert-surface-rule constraints))
 
-;;; i'm not sure that this is very useful given that you can just call 
+;;; i'm not sure that this is very useful given that you can just call
 ;;; utilty on the feature-set and the node-space
 ;;; This code used to scale the value returned by utility, but it appears
 ;;; that utility does that already.
 
-(defun make-utility-function (feature-set preferences intended-max-value 
+(defun make-utility-function (feature-set preferences intended-max-value
 			      &optional (combining-function #'+) (base-value 0))
   (let ((constraints (mapcar #'convert-surface-rule preferences)))
-    (multiple-value-bind (his-ns his-max-value) 
+    (multiple-value-bind (his-ns his-max-value)
 	(process-all-rules constraints feature-set intended-max-value combining-function base-value)
       (declare (ignore his-max-value))
       (values
@@ -433,7 +433,7 @@
 (defun make-utility-bounds-function (feature-set preferences intended-max-value
 			      &optional (combining-function #'+) (base-value 0))
   (let ((constraints (mapcar #'convert-surface-rule preferences)))
-    (multiple-value-bind (his-ns his-max-value) 
+    (multiple-value-bind (his-ns his-max-value)
 	(process-all-rules constraints feature-set intended-max-value combining-function base-value)
       (declare (ignore his-max-value))
       (values
@@ -450,20 +450,20 @@
 simple tests
 
 (defvar ns nil)
-(setq ns (make-node-space '((speed fast slow) 
+(setq ns (make-node-space '((speed fast slow)
 			    (quality high medium low)
 			    (privacy public private))))
 
 (defvar node nil)
-(setq node (find-feature-set-node '((speed fast) (quality low) (privacy private)) 
+(setq node (find-feature-set-node '((speed fast) (quality low) (privacy private))
 				  ns))
 (print (decode-node node))
 
 (loop for v1 in '(fast slow)
       do (loop for v2 in '(high medium low)
 	       do (loop for v3 in '(private public)
-		      for node = (find-feature-set-node `((speed ,v1) 
-							  (quality ,v2) 
+		      for node = (find-feature-set-node `((speed ,v1)
+							  (quality ,v2)
 							  (privacy ,v3))
 							ns)
 			for decode = (decode-node node)
@@ -474,7 +474,7 @@ simple tests
 				   (second (assoc 'privacy decode))
 				   ))))
 
-(find-feature-set-nodes '((speed fast)) '(quality privacy) ns 
+(find-feature-set-nodes '((speed fast)) '(quality privacy) ns
 			#'(lambda (node accumulated-dont-cares)
 			    (print (decode-node node))
 			    (format t "~{~a~^,~}"
@@ -513,8 +513,8 @@ simple tests
   (loop for quality-value in '(high medium low)
       do (loop for speed-value in '(fast slow)
 	       do (loop for privacy-value in '(private public)
-		      for value = (utility `((speed ,speed-value) 
-					     (privacy ,privacy-value) 
+		      for value = (utility `((speed ,speed-value)
+					     (privacy ,privacy-value)
 					     (quality ,quality-value))
 					   feature-evaluator)
 			do (format t "~% ~a ~a ~a ~d"
@@ -522,7 +522,7 @@ simple tests
 				   value
 				   )))))
 
-(defun umax-new (&optional (features '((speed fast))) 
+(defun umax-new (&optional (features '((speed fast)))
 			   (cutoff 6))
   (utility-upper-bounds features cutoff feature-evaluator))
 
@@ -543,7 +543,7 @@ simple tests
      10))
 
 (defparameter util-func2
-    (make-utility-bounds-function 
+    (make-utility-bounds-function
      '((speed fast slow) (quality high medium low) (privacy private public))
      '((speed fast (>> 2) speed slow)
        (quality high (>> 2) quality medium)
@@ -561,7 +561,7 @@ simple tests
 (funcall util-func1 '((speed fast) (quality medium) (privacy private)))
 (funcall util-func1 '((speed fast) (quality medium) (privacy public)))
 
-(funcall util-func1  '((speed fast) (quality low) (privacy 
+(funcall util-func1  '((speed fast) (quality low) (privacy
 (funcall util-func1  '((speed fast) (quality low) (privacy public)))
 
 (funcall util-func1 '((speed slow) (quality high) (privacy private)))
@@ -604,6 +604,6 @@ simple tests
 
 (utility  '((speed slow) (quality low) (privacy private)) node-space)
 (utility  '((speed slow) (quality low) (privacy public)) node-space)
-         
+
 
 |#
