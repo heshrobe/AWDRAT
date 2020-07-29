@@ -57,6 +57,7 @@
 ;;; 4) the process it was noticed in
 ;;; 5) the args and/or the return-value
 
+;;; in SBCL you can't wrap internal functions defined by flet or labels
 
 #+sbcl
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -118,7 +119,7 @@
 	     ,(when entry
 		`(notice-event ',event-name 'entry (get-universal-time) sb-thread:*current-thread* args))
 	     ,(when exit
-		`(let ((return-values (multiple-value-list (call-next-fwrapper))))
+		`(let ((return-values (multiple-value-list (apply next-function args))))
 		   (notice-event ',event-name 'exit (get-universal-time) sb-thread:*current-thread* return-values)
 		   (apply #'values return-values))))))))))
 
