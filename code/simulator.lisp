@@ -537,7 +537,10 @@
 								       ,(ask-database-predication just2)
 								       ,self)))))))))))
        ((and (eql (before-or-after situation) :before)
-	     (typep component 'component-object))
+             ;; this used to say component-object which doesn't exist
+             ;; But I think it needs to be a compound compinent to push
+             ;; assertions inside it.
+	     (typep component 'compound-component))
 	(push-outside-assertion-inside self component))
        ;; Propogate across a Join branch
        ((and (eql (before-or-after situation) :before)
