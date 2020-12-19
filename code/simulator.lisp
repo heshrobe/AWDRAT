@@ -1127,6 +1127,7 @@
 
 (defmacro defbehavior-model ((component-type &rest model-names)
 			     &key prerequisites post-conditions inputs outputs
+                                  pre-bindings post-bindings
 				  invariants wrap-points
 				  allowable-events
 				  )
@@ -1139,6 +1140,10 @@
     (setq invariants
       (loop for inv in invariants
 	  collect (hack-situation-into-assertion interval-variable inv)))
+    (setq pre-bindings 
+      (loop for (variable value) in pre-bindings collect `(unify ,variable ,value)))
+    (setq post-bindings 
+      (loop for (variable value) in post-bindings collect `(unify ,variable ,value)))
     (setq prerequisites
       (loop for prereq in prerequisites
 	  collect (hack-situation-into-assertion pre-situation-variable prereq)))
@@ -1197,6 +1202,7 @@
 			 (predication-maker '(behavior ,component-variable ,component-type))
 			 ,@input-assertions
 			 (predication-maker '(situation ,component-variable before ,pre-situation-variable))
+                         ,@pre-bindings
 			 ,@prerequisites))
 		   then (predication-maker '(prerequisites-satisfied ,component-variable)))
 		generated-rules))
@@ -1221,6 +1227,7 @@
 		       ))
 		 then (predication-maker
 		       '(and
+                         ,@post-bindings
 			 ,@invariants
 			 ,@post-conditions)))
 	      generated-rules)))
